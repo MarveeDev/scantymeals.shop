@@ -8,6 +8,58 @@ from pymongo import MongoClient
 client = MongoClient("mongodb+srv://Marvee:Medofopa7528@cluster0.ekxxrci.mongodb.net/scantymeals?retryWrites=true&w=majority&appName=Cluster0")
 
 db = client["scantymeals"]
+app = Flask(__name__)
+CORS(app)
+
+@app.route('/api/orders', methods=['POST'])
+def place_order():
+    try:
+        data = request.get_json()
+
+        order = {
+            "customer": data.get("customer"),
+            "phone": data.get("phone"),
+            "location": data.get("location"),
+            "items": data.get("items"),
+            "total": data.get("total"),
+            "status": "Pending",
+            "created_at": datetime.utcnow()
+        }
+
+        result = orders_collection.insert_one(order)
+
+        return jsonify({
+            "success": True,
+            "message": "Order placed successfully",
+            "order_id": str(result.inserted_id)
+        }), 201
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+
+@app.route('/api/admin/orders', methods=['GET'])
+def get_orders():
+    try:
+        orders = []
+
+        for order in orders_collection.find():
+            order['_id'] = str(order['_id'])
+            orders.append(order)
+
+        return jsonify({
+            "success": True,
+            "orders": orders
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
 from pymongo import ReturnDocument
 from bson.objectid import ObjectId
 import json
