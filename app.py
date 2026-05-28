@@ -4,6 +4,10 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from datetime import datetime, date, timedelta
 from pymongo import MongoClient
+
+client = MongoClient("mongodb+srv://Marvee:Medofopa7528@cluster0.ekxxrci.mongodb.net/scantymeals?retryWrites=true&w=majority&appName=Cluster0")
+
+db = client["scantymeals"]
 from pymongo import ReturnDocument
 from bson.objectid import ObjectId
 import json
