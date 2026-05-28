@@ -15,6 +15,14 @@ from functools import wraps
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
+import bcrypt
+
+def hash_password(password):
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password, hash_val):
+    return bcrypt.checkpw(password.encode('utf-8'), hash_val.encode('utf-8'))
+
 # Prevent browser caching of index.html and static files
 @app.after_request
 def add_header(response):
@@ -121,9 +129,6 @@ MENU_ITEMS = [
 
 # ==================== Authentication Functions ====================
 
-def hash_password(password):
-    """Hash password using bcrypt"""
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def verify_password(password, hash_val):
     """Verify password against hash"""
