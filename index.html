@@ -346,20 +346,7 @@
   <div class="mt-6 w-16 h-1 bg-white rounded-full animate-pulse"></div>
 </div>
 
-<!-- PHONE + NAME LOGIN -->
-<div id="phoneAuthModal" class="modal-overlay" style="display:none; z-index: 1200;" onclick="if(event.target===this) return false;">
-  <div class="modal-box p-6" onclick="event.stopPropagation()">
-    <h2 class="font-display text-2xl font-bold text-primary mb-2">Login With Phone</h2>
-    <p id="phoneAuthMessage" class="text-sm text-gray-600 mb-5">Enter your phone number and name.</p>
-
-    <input id="phoneInput" type="tel" placeholder="Phone Number (e.g. 024xxxxxxx)" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
-    <input id="phoneNameInput" type="text" placeholder="Your Name (optional)" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
-
-    <button onclick="loginWithPhoneName()" class="btn-primary w-full">Login</button>
-
-    <p id="phoneAuthStatus" class="text-sm mt-4 text-gray-600"></p>
-  </div>
-</div>
+<!-- LOGIN MODAL REMOVED (phone+name login disabled) -->
 
 <!-- MAIN APP -->
 <div id="app" style="display:block">
@@ -777,7 +764,6 @@ function applySuccessfulLogin(authData) {
   app.token = authData.token;
   app.user = authData.user;
 
-  hidePhoneAuthModal();
   updateUserInfo();
 
   const today = new Date().toISOString().split('T')[0];
@@ -797,13 +783,7 @@ function setPhoneAuthStatus(msg, type = 'info') {
   else el.style.color = '#666';
 }
 
-function showPhoneAuthModal(message = 'Enter your phone number and name.') {
-  const modal = document.getElementById('phoneAuthModal');
-  const msg = document.getElementById('phoneAuthMessage');
-  if (modal) modal.style.display = 'flex';
-  if (msg) msg.textContent = message;
-  setPhoneAuthStatus('');
-}
+/* showPhoneAuthModal removed (login UI disabled) */
 
 function normalizePhoneForBackend(rawPhone) {
   const digits = (rawPhone || '').replace(/\D/g, '');
@@ -814,51 +794,9 @@ function normalizePhoneForBackend(rawPhone) {
   return '+' + digits;
 }
 
-function hidePhoneAuthModal() {
-  const modal = document.getElementById('phoneAuthModal');
-  if (modal) modal.style.display = 'none';
-}
+/* hidePhoneAuthModal removed (login UI disabled) */
 
-async function loginWithPhoneName() {
-  const phoneRaw = document.getElementById('phoneInput').value.trim();
-  const name = document.getElementById('phoneNameInput').value.trim();
-
-  if (!phoneRaw) {
-    setPhoneAuthStatus('Phone number is required.', 'error');
-    return;
-  }
-
-  const phone = normalizePhoneForBackend(phoneRaw);
-  if (!phone || phone.length < 11) {
-    setPhoneAuthStatus('Enter a valid phone number (e.g. 024xxxxxxx).', 'error');
-    return;
-  }
-
-  setPhoneAuthStatus('Logging in...');
-
-  try {
-    // Use relative URL to avoid "fail to fetch" from incorrect API_BASE rewriting.
-    // originalFetch bypasses our window.fetch override.
-    const res = await originalFetch('/api/auth/phone-name', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, name })
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.success) {
-      throw new Error(data.message || 'Login failed');
-    }
-
-    // Store standardized phone for UI consistency
-    document.getElementById('phoneInput').value = phone;
-
-    setPhoneAuthStatus('Login successful.', 'success');
-    applySuccessfulLogin(data);
-  } catch (err) {
-    setPhoneAuthStatus(err.message || 'Unable to login.', 'error');
-  }
-}
+/* loginWithPhoneName removed (login UI disabled) */
 
 function logout(reload = true) {
   localStorage.removeItem('token');
@@ -870,9 +808,7 @@ function logout(reload = true) {
     location.reload();
     return;
   }
-
   showPage('menu');
-  showPhoneAuthModal('Session expired. Login with phone to continue.');
 }
 
 function updateUserInfo() {
@@ -1381,12 +1317,7 @@ function goToPage(pageId, event, closeMobile = false) {
 }
 
 function showPage(pageId) {
-  // Require login for protected pages
-  if ((pageId === 'orders' || pageId === 'analytics' || pageId === 'admin') && !app.user) {
-    showPhoneAuthModal('Login with phone to continue.');
-    return;
-  }
-
+  // Login UI removed; allow page navigation without blocking.
   if (pageId === 'admin' && app.user && app.user.role !== 'admin') {
     alert('Admin access required');
     return;
@@ -1448,9 +1379,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (!app.user) {
-    showPhoneAuthModal('Login with phone to place orders, view orders, and continue.');
-  }
+  // Login UI removed: do not block rendering if not authenticated.
 
   // Hide splash after a moment, and load menu immediately regardless of login.
   setTimeout(() => {
