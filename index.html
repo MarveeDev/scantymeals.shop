@@ -837,8 +837,9 @@ async function loginWithPhoneName() {
   setPhoneAuthStatus('Logging in...');
 
   try {
-    const endpoint = API_BASE ? `${API_BASE}/api/auth/phone-name` : '/api/auth/phone-name';
-    const res = await originalFetch(endpoint, {
+    // Use relative URL to avoid "fail to fetch" from incorrect API_BASE rewriting.
+    // originalFetch bypasses our window.fetch override.
+    const res = await originalFetch('/api/auth/phone-name', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, name })
