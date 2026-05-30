@@ -409,6 +409,28 @@ def meals_file():
 @app.route('/api/menu', methods=['GET'])
 def get_menu():
     # Keep menu publicly readable so first-time visitors can browse immediately.
+    # If meals.json exists, use it as the source of truth so frontend/backend stay in sync.
+    try:
+        meals_path = os.path.join(app.root_path, 'meals.json')
+        if os.path.exists(meals_path):
+            with open(meals_path, 'r', encoding='utf-8') as f:
+                meals = json.load(f)
+
+            items = []
+            for idx, meal in enumerate(meals, start=1):
+                items.append({
+                    "id": meal.get("id", idx),
+                    "name": meal.get("name", f"Item {idx}"),
+                    "description": meal.get("description", ""),
+                    "price": float(meal.get("price", 0)),
+                    "category": meal.get("category", "Signature"),
+                    "image": meal.get("image", "/IMG/menu_1.jpg"),
+                    "available": bool(meal.get("available", True))
+                })
+            return jsonify({"success": True, "items": items})
+    except Exception as e:
+        print(f"Warning: failed to read meals.json ({e}). Using default menu.")
+
     return jsonify({"success": True, "items": MENU_ITEMS})
 
 @app.route('/api/orders', methods=['POST'])

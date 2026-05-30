@@ -1,23 +1,30 @@
 [
   {
     "name": "Plain Rice",
-    "price": 25,
+    "price": 40,
     "category": "Rice",
-    "image": "https://images.unsplash.com/photo-1604908554007-3c7d6f5c0e4f?w=500",
+    "image": "/IMG/plain%20rice.jpg",
     "available": true
   },
   {
     "name": "Fried Rice",
-    "price": 30,
+    "price": 40,
     "category": "Rice",
-    "image": "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=500",
+    "image": "/IMG/fried%20rice.jpg",
     "available": true
   },
   {
     "name": "Noodles",
-    "price": 25,
+    "price": 30,
     "category": "Fast Food",
-    "image": "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=500",
+    "image": "/IMG/EXT%20noddles.jpg",
+    "available": true
+  },
+  {
+    "name": "Noodles with Beef",
+    "price": 30,
+    "category": "Fast Food",
+    "image": "/IMG/noodles%20with%20beef.jpg",
     "available": true
   }
 ]
