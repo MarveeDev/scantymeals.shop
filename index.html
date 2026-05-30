@@ -111,6 +111,7 @@
 
   <style>
     * { box-sizing: border-box; }
+    html, body { max-width: 100%; overflow-x: hidden; }
     body { font-family: 'Poppins', sans-serif; background: #f9f9f9; }
 
     .page-shell {
@@ -122,6 +123,35 @@
     @media (min-width: 768px) {
       .page-shell {
         width: min(1160px, calc(100% - 3rem));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page-shell {
+        width: calc(100% - 1rem);
+      }
+
+      .splash-logo {
+        font-size: 2.2rem;
+        text-align: center;
+      }
+
+      #splash p {
+        font-size: 0.95rem;
+        text-align: center;
+        padding: 0 1rem;
+      }
+
+      .menu-card img {
+        height: 200px;
+      }
+
+      .modal-overlay {
+        padding: 10px;
+      }
+
+      .modal-box {
+        border-radius: 14px;
       }
     }
     
@@ -389,28 +419,47 @@
   <div class="mt-6 w-16 h-1 bg-white rounded-full animate-pulse"></div>
 </div>
 
+<!-- PHONE OTP LOGIN -->
+<div id="phoneAuthModal" class="modal-overlay" style="display:none; z-index: 1200;" onclick="if(event.target===this) return false;">
+  <div class="modal-box p-6" onclick="event.stopPropagation()">
+    <h2 class="font-display text-2xl font-bold text-primary mb-2">Login With Phone</h2>
+    <p id="phoneAuthMessage" class="text-sm text-gray-600 mb-5">Enter your phone number to receive OTP.</p>
+
+    <input id="phoneInput" type="tel" placeholder="Phone Number (e.g. 024xxxxxxx)" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
+    <button onclick="requestPhoneOtp()" class="btn-primary w-full">Send OTP</button>
+
+    <div id="otpSection" style="display:none;" class="mt-4">
+      <input id="otpInput" type="text" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit OTP" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
+      <input id="phoneNameInput" type="text" placeholder="Your Name (optional)" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
+      <button onclick="verifyPhoneOtp()" class="btn-primary w-full">Confirm OTP</button>
+    </div>
+
+    <p id="phoneAuthStatus" class="text-sm mt-4 text-gray-600"></p>
+  </div>
+</div>
+
 <!-- MAIN APP -->
 <div id="app" style="display:block">
 
   <!-- NAVIGATION -->
   <nav class="sticky top-0 z-100">
-    <div class="page-shell py-4 flex items-center justify-between">
+    <div class="page-shell py-3 sm:py-4 flex items-center justify-between gap-2">
       <div class="flex items-center gap-3">
         <img src="IMG/scanty%20logo.jpg" alt="Scanty Logo" style="width: 50px; height: 50px; object-fit: contain;">
         <div>
-          <h1 class="font-display text-2xl font-bold text-primary">Scanty Meals</h1>
-          <p class="text-xs text-gray-500">Fresh • Delicious • Fast</p>
+          <h1 class="font-display text-lg sm:text-2xl font-bold text-primary leading-tight">Scanty Meals</h1>
+          <p class="hidden sm:block text-xs text-gray-500">Fresh • Delicious • Fast</p>
         </div>
       </div>
 
       <div class="hidden md:flex items-center gap-8">
-        <a href="#menu" class="nav-link" onclick="showPage('menu')">Menu</a>
-        <a href="#orders" class="nav-link" onclick="showPage('orders')">Orders</a>
-        <a id="adminLink" href="#admin" class="nav-link" onclick="showPage('admin')" style="display: none;">Admin</a>
-        <a href="#analytics" class="nav-link" onclick="showPage('analytics')">Analytics</a>
+        <a href="#menu" class="nav-link" onclick="return goToPage('menu', event)">Menu</a>
+        <a href="#orders" class="nav-link" onclick="return goToPage('orders', event)">Orders</a>
+        <a id="adminLink" href="#admin" class="nav-link" onclick="return goToPage('admin', event)" style="display: none;">Admin</a>
+        <a href="#analytics" class="nav-link" onclick="return goToPage('analytics', event)">Analytics</a>
       </div>
 
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2 sm:gap-4">
         <div id="userInfo" class="hidden sm:block text-right mr-4">
           <p id="userName" style="font-weight: 600; font-size: 14px; margin: 0;"></p>
           <p id="userRole" style="font-size: 12px; color: #FF6B35; margin: 0;"></p>
@@ -434,10 +483,10 @@
     <!-- Mobile Menu Dropdown -->
     <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-gray-100 w-full absolute shadow-lg">
       <div class="flex flex-col p-4 space-y-4">
-        <a href="#menu" class="nav-link mobile-link" onclick="showPage('menu'); toggleMobileMenu()">Menu</a>
-        <a href="#orders" class="nav-link mobile-link" onclick="showPage('orders'); toggleMobileMenu()">Orders</a>
-        <a id="mobileAdminLink" href="#admin" class="nav-link mobile-link" onclick="showPage('admin'); toggleMobileMenu()" style="display: none;">Admin</a>
-        <a href="#analytics" class="nav-link mobile-link" onclick="showPage('analytics'); toggleMobileMenu()">Analytics</a>
+        <a href="#menu" class="nav-link mobile-link" onclick="return goToPage('menu', event, true)">Menu</a>
+        <a href="#orders" class="nav-link mobile-link" onclick="return goToPage('orders', event, true)">Orders</a>
+        <a id="mobileAdminLink" href="#admin" class="nav-link mobile-link" onclick="return goToPage('admin', event, true)" style="display: none;">Admin</a>
+        <a href="#analytics" class="nav-link mobile-link" onclick="return goToPage('analytics', event, true)">Analytics</a>
         <div class="border-t pt-4 mt-2">
           <button onclick="logout()" class="w-full px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-md text-left">Logout</button>
         </div>
@@ -451,11 +500,11 @@
     <!-- MENU PAGE -->
     <div id="menuPage" class="page active">
       <!-- Hero Section -->
-      <div class="hero py-12 md:py-16">
+      <div class="hero py-10 md:py-16">
         <div class="page-shell hero-content">
-          <h1 class="font-display text-5xl md:text-6xl font-bold mb-4">Premium Fried Rice</h1>
-          <p class="text-lg text-gray-100 max-w-md mb-6">Freshly cooked with the finest ingredients, delivered hot to your door</p>
-          <div class="flex gap-4 flex-wrap">
+          <h1 class="font-display text-4xl sm:text-5xl md:text-6xl font-bold mb-4 leading-tight">Premium Fried Rice</h1>
+          <p class="text-base sm:text-lg text-gray-100 max-w-md mb-6">Freshly cooked with the finest ingredients, delivered hot to your door</p>
+          <div class="flex gap-2 sm:gap-4 flex-wrap">
             <div class="bg-white/20 px-4 py-2 rounded-full text-sm font-semibold">⭐ 4.9 Rating</div>
             <div class="bg-white/20 px-4 py-2 rounded-full text-sm font-semibold">🕐 20-30 min</div>
             <div class="bg-white/20 px-4 py-2 rounded-full text-sm font-semibold">🔥 Hot & Fresh</div>
@@ -465,7 +514,7 @@
 
       <!-- Menu Grid -->
       <div class="page-shell py-12">
-        <h2 class="font-display text-4xl font-bold mb-2">Our Menu</h2>
+        <h2 class="font-display text-3xl sm:text-4xl font-bold mb-2">Our Menu</h2>
         <p class="text-gray-600 mb-8" id="menuCount">Loading menu items...</p>
 
         <!-- Skeleton loader (shown until menu loads) -->
@@ -541,13 +590,13 @@
     <!-- ORDERS PAGE -->
     <div id="ordersPage" class="page">
       <div class="max-w-4xl mx-auto px-4 py-10">
-        <h1 class="font-display text-4xl font-bold mb-2">Your Orders</h1>
+        <h1 class="font-display text-3xl sm:text-4xl font-bold mb-2">Your Orders</h1>
         <p class="text-gray-600 mb-8">Track all your placed orders</p>
 
         <div id="ordersEmpty" class="text-center py-16">
           <p class="text-5xl mb-4">📋</p>
           <p class="text-xl font-semibold text-gray-600 mb-4">No orders yet</p>
-          <a href="#menu" onclick="showPage('menu')" class="btn-primary">Browse Menu</a>
+          <a href="#menu" onclick="return goToPage('menu', event)" class="btn-primary">Browse Menu</a>
         </div>
 
         <div id="ordersList" class="space-y-4" style="display:none;">
@@ -559,7 +608,7 @@
     <!-- ADMIN PAGE -->
     <div id="adminPage" class="page">
       <div class="max-w-6xl mx-auto px-4 py-10">
-        <h1 class="font-display text-4xl font-bold mb-2">Order Management</h1>
+        <h1 class="font-display text-3xl sm:text-4xl font-bold mb-2">Order Management</h1>
         <p class="text-gray-600 mb-8">Manage incoming orders</p>
 
         <!-- Stats -->
@@ -612,10 +661,10 @@
       <div class="max-w-6xl mx-auto px-4 py-10">
         <div class="flex justify-between items-start mb-8 flex-wrap gap-4">
           <div>
-            <h1 class="font-display text-4xl font-bold">Analytics</h1>
+            <h1 class="font-display text-3xl sm:text-4xl font-bold">Analytics</h1>
             <p class="text-gray-600">Track your sales performance</p>
           </div>
-          <input id="analyticsDatePicker" type="date" class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary" onchange="loadAnalytics()">
+          <input id="analyticsDatePicker" type="date" class="w-full sm:w-auto border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary" onchange="loadAnalytics()">
         </div>
 
         <!-- KPI Cards -->
@@ -730,7 +779,7 @@
   </div>
 
   <!-- SUCCESS TOAST -->
-  <div id="successToast" style="display:none" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 flex gap-3">
+  <div id="successToast" style="display:none" class="fixed bottom-3 left-3 right-3 sm:left-auto sm:right-4 sm:bottom-4 bg-green-500 text-white px-4 sm:px-6 py-4 rounded-lg shadow-lg z-50 flex gap-3">
     <span class="text-2xl">✅</span>
     <div>
       <p class="font-bold">Order Placed!</p>
@@ -773,9 +822,9 @@
     <div>
       <h4 class="font-bold mb-4 text-white">Quick Links</h4>
       <ul class="space-y-2 text-sm text-gray-400">
-        <li><a href="#menu" onclick="showPage('menu')" class="footer-link">Menu</a></li>
-        <li><a href="#orders" onclick="showPage('orders')" class="footer-link">My Orders</a></li>
-        <li><a href="#analytics" onclick="showPage('analytics')" class="footer-link">Analytics</a></li>
+        <li><a href="#menu" onclick="return goToPage('menu', event)" class="footer-link">Menu</a></li>
+        <li><a href="#orders" onclick="return goToPage('orders', event)" class="footer-link">My Orders</a></li>
+        <li><a href="#analytics" onclick="return goToPage('analytics', event)" class="footer-link">Analytics</a></li>
       </ul>
     </div>
   </div>
@@ -795,28 +844,18 @@ const app = {
   cart: [],
   currentPage: 'menu',
   user: null,
-  token: null
+  token: null,
+  otpSession: null
 };
 
 // ===== AUTHENTICATION =====
-function toggleAuthForm() {
-  document.getElementById('loginForm').style.display = document.getElementById('loginForm').style.display === 'none' ? 'block' : 'none';
-  document.getElementById('registerForm').style.display = document.getElementById('registerForm').style.display === 'none' ? 'block' : 'none';
-}
-
 function applySuccessfulLogin(authData) {
   localStorage.setItem('token', authData.token);
   localStorage.setItem('user', JSON.stringify(authData.user));
   app.token = authData.token;
   app.user = authData.user;
 
-  const authError = document.getElementById('authError');
-  if (authError) {
-    authError.style.display = 'none';
-    authError.textContent = '';
-  }
-
-  // login page was removed; just update UI
+  hidePhoneAuthModal();
   updateUserInfo();
 
   const today = new Date().toISOString().split('T')[0];
@@ -827,85 +866,124 @@ function applySuccessfulLogin(authData) {
 
 window.applySuccessfulLogin = applySuccessfulLogin;
 
-async function handleLogin() {
-  const email = document.getElementById('loginEmail').value;
-  const password = document.getElementById('loginPassword').value;
-  
-  if (!email || !password) {
-    showAuthError('Please fill in all fields');
+function setPhoneAuthStatus(msg, type = 'info') {
+  const el = document.getElementById('phoneAuthStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  if (type === 'error') el.style.color = '#dc3545';
+  else if (type === 'success') el.style.color = '#28a745';
+  else el.style.color = '#666';
+}
+
+function showPhoneAuthModal(message = 'Enter your phone number to receive OTP.') {
+  const modal = document.getElementById('phoneAuthModal');
+  const msg = document.getElementById('phoneAuthMessage');
+  const otpSection = document.getElementById('otpSection');
+  const otpInput = document.getElementById('otpInput');
+  if (modal) modal.style.display = 'flex';
+  if (msg) msg.textContent = message;
+  if (otpSection) otpSection.style.display = 'none';
+  if (otpInput) otpInput.value = '';
+  app.otpSession = null;
+  setPhoneAuthStatus('');
+}
+
+function hidePhoneAuthModal() {
+  const modal = document.getElementById('phoneAuthModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function requestPhoneOtp() {
+  const phone = document.getElementById('phoneInput').value.trim();
+  if (!phone) {
+    setPhoneAuthStatus('Enter your phone number first.', 'error');
     return;
   }
 
+  setPhoneAuthStatus('Sending OTP...');
+
   try {
-    const res = await fetch('/api/auth/login', {
+    const endpoint = API_BASE ? `${API_BASE}/api/auth/request-otp` : '/api/auth/request-otp';
+    const res = await originalFetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ phone })
     });
-    const data = await res.json();
-    
-    if (data.success) {
-      applySuccessfulLogin(data);
-    } else {
-      showAuthError(data.message || 'Login failed');
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || 'Failed to send OTP');
     }
+
+    app.otpSession = {
+      provider: data.provider || 'local',
+      request_id: data.request_id || null,
+      prefix: data.prefix || null
+    };
+    document.getElementById('otpSection').style.display = 'block';
+    const otpHint = data.otp_preview ? ` OTP: ${data.otp_preview}` : '';
+    setPhoneAuthStatus(`OTP sent to ${data.phone}.${otpHint}`, 'success');
   } catch (err) {
-    showAuthError('Connection error. Make sure backend is running.');
+    const msg = (err && err.message) ? err.message : '';
+    if (msg.toLowerCase().includes('failed to fetch')) {
+      setPhoneAuthStatus('Unable to reach auth server. Check Render URL, CORS, and deployment status.', 'error');
+    } else {
+      setPhoneAuthStatus(msg || 'Unable to send OTP. Check backend deployment and Hubtel keys.', 'error');
+    }
   }
 }
 
-async function handleRegister() {
-  const name = document.getElementById('regName').value;
-  const email = document.getElementById('regEmail').value;
-  const password = document.getElementById('regPassword').value;
-  
-  if (!name || !email || !password) {
-    showAuthError('Please fill in all fields');
+async function verifyPhoneOtp() {
+  const phone = document.getElementById('phoneInput').value.trim();
+  const otp = document.getElementById('otpInput').value.trim();
+  const name = document.getElementById('phoneNameInput').value.trim();
+
+  if (!phone || !otp) {
+    setPhoneAuthStatus('Enter phone and OTP to continue.', 'error');
     return;
   }
 
+  setPhoneAuthStatus('Verifying OTP...');
+
   try {
-    const res = await fetch('/api/auth/register', {
+    const endpoint = API_BASE ? `${API_BASE}/api/auth/verify-otp` : '/api/auth/verify-otp';
+    const res = await originalFetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, role: 'customer' })
+      body: JSON.stringify({
+        phone,
+        otp,
+        name,
+        request_id: app.otpSession?.request_id || null,
+        prefix: app.otpSession?.prefix || null
+      })
     });
-    const data = await res.json();
-    
-    if (data.success) {
-      showAuthError('Account created! Now sign in.', 'success');
-      setTimeout(() => toggleAuthForm(), 1500);
-    } else {
-      showAuthError(data.message || 'Registration failed');
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || 'OTP verification failed');
     }
+
+    setPhoneAuthStatus('Login successful.', 'success');
+    applySuccessfulLogin(data);
   } catch (err) {
-    showAuthError('Connection error. Make sure backend is running.');
+    setPhoneAuthStatus(err.message || 'Unable to verify OTP.', 'error');
   }
 }
 
-function showAuthError(msg, type = 'error') {
-  const err = document.getElementById('authError');
-  if (!err) return;
-  err.textContent = msg;
-  err.style.display = 'block';
-  if (type === 'success') err.style.color = '#28a745';
-  else err.style.color = '#dc3545';
-}
-
-function hideLoginPage() {
-  // login page removed; keep this safe to avoid runtime errors if called
-  const loginPage = document.getElementById('loginPage');
-  const appEl = document.getElementById('app');
-  if (loginPage) loginPage.style.display = 'none';
-  if (appEl) appEl.style.display = 'block';
-}
-
-function logout() {
+function logout(reload = true) {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   app.token = null;
   app.user = null;
-  location.reload();
+  updateUserInfo();
+  if (reload) {
+    location.reload();
+    return;
+  }
+
+  showPage('menu');
+  showPhoneAuthModal('Session expired. Login with phone to continue.');
 }
 
 function updateUserInfo() {
@@ -919,6 +997,13 @@ function updateUserInfo() {
       if(document.getElementById('mobileAdminLink')) {
          document.getElementById('mobileAdminLink').style.display = 'block';
       }
+    }
+  } else {
+    document.getElementById('userName').textContent = '';
+    document.getElementById('userRole').textContent = '';
+    document.getElementById('adminLink').style.display = 'none';
+    if (document.getElementById('mobileAdminLink')) {
+      document.getElementById('mobileAdminLink').style.display = 'none';
     }
   }
 }
@@ -943,8 +1028,13 @@ window.fetch = async function(...args) {
   }
   const res = await originalFetch.apply(this, args);
   // If authorized request fails with 401, token is likely expired.
-  if (res.status === 401 && !args[0].includes('/api/auth/login')) {
-    logout();
+  if (
+    res.status === 401 &&
+    !args[0].includes('/api/auth/login') &&
+    !args[0].includes('/api/auth/request-otp') &&
+    !args[0].includes('/api/auth/verify-otp')
+  ) {
+    logout(false);
     throw new Error('Unauthorized (Session Expired)');
   }
   return res;
@@ -1389,7 +1479,32 @@ function toggleMobileMenu() {
   menu.classList.toggle('hidden');
 }
 
+function goToPage(pageId, event, closeMobile = false) {
+  if (event) {
+    event.preventDefault();
+  }
+  showPage(pageId);
+  if (closeMobile) {
+    const menu = document.getElementById('mobileMenu');
+    if (menu && !menu.classList.contains('hidden')) {
+      menu.classList.add('hidden');
+    }
+  }
+  return false;
+}
+
 function showPage(pageId) {
+  // Require login for protected pages
+  if ((pageId === 'orders' || pageId === 'analytics' || pageId === 'admin') && !app.user) {
+    showPhoneAuthModal('Login with phone to continue.');
+    return;
+  }
+
+  if (pageId === 'admin' && app.user && app.user.role !== 'admin') {
+    alert('Admin access required');
+    return;
+  }
+
   // Hide all pages
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   // Update nav links
@@ -1444,6 +1559,10 @@ window.addEventListener('DOMContentLoaded', () => {
       app.token = null;
       app.user = null;
     }
+  }
+
+  if (!app.user) {
+    showPhoneAuthModal('Login with phone to place orders, view orders, and continue.');
   }
 
   // Hide splash after a moment, and load menu immediately regardless of login.

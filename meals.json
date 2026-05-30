@@ -26,5 +26,68 @@
     "category": "Fast Food",
     "image": "/IMG/noodles%20with%20beef.jpg",
     "available": true
+  },
+  {
+    "name": "Beef Rice",
+    "price": 40,
+    "category": "Rice",
+    "image": "/IMG/beef%20rice.jpg",
+    "available": true
+  },
+  {
+    "name": "Noodles with Egg",
+    "price": 30,
+    "category": "Fast Food",
+    "image": "/IMG/noodle%20with%20egg.jpg",
+    "available": true
+  },
+  {
+    "name": "Roasted Chicken Leg",
+    "price": 35,
+    "category": "Protein",
+    "image": "/IMG/roasted%20chichen%20leg.jpg",
+    "available": true
+  },
+  {
+    "name": "Classic Fried Rice",
+    "price": 40,
+    "category": "Signature",
+    "image": "/IMG/menu_1.jpg",
+    "available": true
+  },
+  {
+    "name": "Spicy Jollof Rice",
+    "price": 40,
+    "category": "Spicy",
+    "image": "/IMG/menu_2.jpg",
+    "available": true
+  },
+  {
+    "name": "Chicken Fried Rice",
+    "price": 40,
+    "category": "Protein",
+    "image": "/IMG/menu_3.jpg",
+    "available": true
+  },
+  {
+    "name": "Shrimp Fried Rice",
+    "price": 45,
+    "category": "Seafood",
+    "image": "/IMG/menu_4.jpg",
+    "available": true
+  },
+  {
+    "name": "Veggie Fried Rice",
+    "price": 35,
+    "category": "Vegetarian",
+    "image": "/IMG/menu_5.jpg",
+    "available": true
+  },
+  {
+    "name": "Special Mixed Rice",
+    "price": 50,
+    "category": "Signature",
+    "image": "/IMG/menu_6.jpg",
+    "available": true
   }
 ]
