@@ -1,0 +1,22 @@
+# .gitignore for Python/Flask/Docker projects
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+.env
+.venv/
+.env.*
+.DS_Store
+*.log
+*.err
+.firebase/
+.firebaserc
+firebase.json
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore OS files
+Thumbs.db

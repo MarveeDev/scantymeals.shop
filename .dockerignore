@@ -1,0 +1,15 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.git
+.github
+.vscode
+.firebase
+.firebaserc
+firebase.json
+run.err
+run.log
+server.err
+server.log

@@ -1,0 +1,26 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      ".venv/**",
+      "__pycache__/**",
+      "app.py",
+      "requirements.txt",
+      "test_api.py",
+      "dl.py",
+      "run.err",
+      "run.log",
+      "Dockerfile",
+      ".dockerignore"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

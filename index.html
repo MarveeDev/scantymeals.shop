@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scanty Meals – Premium Fried Rice Delivery</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+
+ <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+  import {
+    getAuth,
+    GoogleAuthProvider,
+    signInWithPopup
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCwGFWUeGeAnVew0MawvtYjLqQrKDhLcXE",
+    authDomain: "scanty-meals.firebaseapp.com",
+    projectId: "scanty-meals",
+    storageBucket: "scanty-meals.firebasestorage.app",
+    messagingSenderId: "441632174969",
+    appId: "1:441632174969:web:4218799226a1179694b5a8",
+    measurementId: "G-VGFEC6VZ2T"
+  };
+
+  const firebaseApp = initializeApp(firebaseConfig);
+  const auth = getAuth(firebaseApp);
+
+  window.signInWithGoogle = async function () {
+
+    try {
+
+        const provider = new GoogleAuthProvider();
+
+        const result = await signInWithPopup(auth, provider);
+
+        const user = result.user;
+
+        console.log("SUCCESS:", user);
+
+        localStorage.setItem(
+            "googleUser",
+            JSON.stringify({
+                name: user.displayName,
+                email: user.email,
+                photo: user.photoURL
+            })
+        );
+
+        const sessionRes = await fetch("/api/auth/google", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: user.email,
+                name: user.displayName || "Google User",
+                firebase_uid: user.uid
+            })
+        });
+
+        const sessionData = await sessionRes.json();
+
+        if (!sessionRes.ok || !sessionData.success) {
+            throw new Error(sessionData.message || "Google session creation failed");
+        }
+
+        localStorage.setItem("token", sessionData.token);
+        localStorage.setItem("user", JSON.stringify(sessionData.user));
+
+        // Keep redirect on same origin to preserve localStorage auth session.
+        if (window.location.hostname === "scantymeals.shop" || window.location.hostname === "www.scantymeals.shop") {
+            window.location.href = "https://scantymeals.shop";
+        } else {
+            window.location.href = "/";
+        }
+
+    } catch (error) {
+
+        console.error(error);
+        alert(error.message);
+
+    }
+}
+   </script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FF6B35',
+            secondary: '#F7931E',
+            accent: '#FFD60A',
+            dark: '#1A1A1A',
+            light: '#F5F5F5'
+          },
+          fontFamily: {
+            display: ['Playfair Display', 'serif'],
+            body: ['Poppins', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; background: #f9f9f9; }
+
+    .page-shell {
+      width: min(1160px, calc(100% - 2rem));
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    @media (min-width: 768px) {
+      .page-shell {
+        width: min(1160px, calc(100% - 3rem));
+      }
+    }
+    
+    /* Splash Screen */
+    #splash {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: opacity 0.5s ease;
+    }
+    #splash.hidden { opacity: 0; visibility: hidden; }
+
+    .splash-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 4rem;
+      font-weight: 900;
+      color: white;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    .splash-emoji {
+      font-size: 5rem;
+      margin-bottom: 1rem;
+      animation: bounce 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    /* Navigation */
+    nav {
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-link {
+      position: relative;
+      transition: color 0.3s;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      color: #FF6B35;
+    }
+
+    .nav-link.active::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(to right, #FF6B35, #F7931E);
+      border-radius: 2px;
+    }
+
+    /* Menu Card */
+    .menu-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+
+    .menu-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 30px rgba(255, 107, 53, 0.2);
+    }
+
+    .menu-card img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      transition: transform 0.4s;
+    }
+
+    .menu-card:hover img {
+      transform: scale(1.08);
+    }
+
+    /* Gradient Button */
+    .btn-primary {
+      background: linear-gradient(135deg, #FF6B35, #F7931E);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Cart Badge */
+    .cart-badge {
+      background: #FF6B35;
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      font-weight: 700;
+      animation: pulse 0.5s;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-box {
+      background: white;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.05)"/><circle cx="80" cy="80" r="30" fill="rgba(255,255,255,0.05)"/></svg>');
+      opacity: 0.5;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (min-width: 1024px) {
+      .hero {
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+      }
+
+      .menu-card img {
+        height: 250px;
+      }
+    }
+
+    /* Status Badge */
+    .status-badge {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-confirmed { background: #e0f7e0; color: #28a745; }
+    .status-preparing { background: #fff3cd; color: #ff9800; }
+    .status-ready { background: #cfe9ff; color: #1976d2; }
+    .status-delivered { background: #e8e8e8; color: #666; }
+
+    /* Footer */
+    footer {
+      background: linear-gradient(135deg, #1A1A1A 0%, #2d2d2d 100%);
+      color: white;
+      margin-top: 60px;
+      border-top: 3px solid #FF6B35;
+    }
+
+    .footer-link {
+      color: #FFD60A;
+      transition: color 0.3s;
+      text-decoration: none;
+    }
+
+    .footer-link:hover {
+      color: #FF6B35;
+    }
+
+    /* Tag Badges */
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .tag-signature { background: rgba(255, 107, 53, 0.15); color: #FF6B35; }
+    .tag-spicy { background: rgba(220, 53, 69, 0.15); color: #dc3545; }
+    .tag-protein { background: rgba(40, 167, 69, 0.15); color: #28a745; }
+    .tag-seafood { background: rgba(23, 162, 184, 0.15); color: #17a2b8; }
+    .tag-vegetarian { background: rgba(46, 204, 113, 0.15); color: #2ecc71; }
+
+    /* Page transitions */
+    .page { display: none; animation: fadeIn 0.3s ease; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #FF6B35; border-radius: 4px; }
+  </style>
+</head>
+
+<body class="bg-light text-dark">
+
+<!-- LOGIN PAGE REMOVED -->
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <img src="IMG/scanty%20logo.jpg" alt="Scanty Logo" style="width: 120px; height: 120px; object-fit: contain; margin-bottom: 1rem;">
+  <div class="splash-logo">Scanty Meals</div>
+  <p class="text-white text-lg mt-4 font-medium">Premium Fried Rice Delivered Fresh</p>
+  <div class="mt-6 w-16 h-1 bg-white rounded-full animate-pulse"></div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+
+  <!-- NAVIGATION -->
+  <nav class="sticky top-0 z-100">
+    <div class="page-shell py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="IMG/scanty%20logo.jpg" alt="Scanty Logo" style="width: 50px; height: 50px; object-fit: contain;">
+        <div>
+          <h1 class="font-display text-2xl font-bold text-primary">Scanty Meals</h1>
+          <p class="text-xs text-gray-500">Fresh • Delicious • Fast</p>
+        </div>
+      </div>
+
+      <div class="hidden md:flex items-center gap-8">
+        <a href="#menu" class="nav-link" onclick="showPage('menu')">Menu</a>
+        <a href="#orders" class="nav-link" onclick="showPage('orders')">Orders</a>
+        <a id="adminLink" href="#admin" class="nav-link" onclick="showPage('admin')" style="display: none;">Admin</a>
+        <a href="#analytics" class="nav-link" onclick="showPage('analytics')">Analytics</a>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div id="userInfo" class="hidden sm:block text-right mr-4">
+          <p id="userName" style="font-weight: 600; font-size: 14px; margin: 0;"></p>
+          <p id="userRole" style="font-size: 12px; color: #FF6B35; margin: 0;"></p>
+        </div>
+        <button onclick="toggleCart()" class="relative p-2">
+          <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+          <span class="cart-badge" id="cartBadge" style="display:none;">0</span>
+        </button>
+        <button onclick="logout()" class="hidden md:block px-4 py-2 bg-primary text-white font-semibold rounded-md">Logout</button>
+        <!-- Mobile Hamburger Button -->
+        <button class="md:hidden p-2 text-gray-700" onclick="toggleMobileMenu()">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Mobile Menu Dropdown -->
+    <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-gray-100 w-full absolute shadow-lg">
+      <div class="flex flex-col p-4 space-y-4">
+        <a href="#menu" class="nav-link mobile-link" onclick="showPage('menu'); toggleMobileMenu()">Menu</a>
+        <a href="#orders" class="nav-link mobile-link" onclick="showPage('orders'); toggleMobileMenu()">Orders</a>
+        <a id="mobileAdminLink" href="#admin" class="nav-link mobile-link" onclick="showPage('admin'); toggleMobileMenu()" style="display: none;">Admin</a>
+        <a href="#analytics" class="nav-link mobile-link" onclick="showPage('analytics'); toggleMobileMenu()">Analytics</a>
+        <div class="border-t pt-4 mt-2">
+          <button onclick="logout()" class="w-full px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-md text-left">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- PAGES CONTAINER -->
+  <div style="min-height: 70vh; padding-top: 20px;">
+    
+    <!-- MENU PAGE -->
+    <div id="menuPage" class="page active">
+      <!-- Hero Section -->
+      <div class="hero py-12 md:py-16">
+        <div class="page-shell hero-content">
+          <h1 class="font-display text-5xl md:text-6xl font-bold mb-4">Premium Fried Rice</h1>
+          <p class="text-lg text-gray-100 max-w-md mb-6">Freshly cooked with the finest ingredients, delivered hot to your door</p>
+          <div class="flex gap-4 flex-wrap">
+            <div class="bg-white/20 px-4 py-2 rounded-full text-sm font-semibold">⭐ 4.9 Rating</div>
+            <div class="bg-white/20 px-4 py-2 rounded-full text-sm font-semibold">🕐 20-30 min</div>
+            <div class="bg-white/20 px-4 py-2 rounded-full text-sm font-semibold">🔥 Hot & Fresh</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Menu Grid -->
+      <div class="page-shell py-12">
+        <h2 class="font-display text-4xl font-bold mb-2">Our Menu</h2>
+        <p class="text-gray-600 mb-8" id="menuCount">Loading menu items...</p>
+
+        <!-- Skeleton loader (shown until menu loads) -->
+        <div id="menuSkeleton" class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6 xl:gap-8">
+          <div class="menu-card overflow-hidden">
+            <div class="relative overflow-hidden h-56 bg-gray-100 animate-pulse">
+              <div class="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100"></div>
+            </div>
+            <div class="p-5">
+              <div class="h-5 bg-gray-100 rounded w-3/4 mb-3 animate-pulse"></div>
+              <div class="h-3 bg-gray-100 rounded w-full mb-4 animate-pulse"></div>
+              <div class="h-10 bg-gray-100 rounded w-full animate-pulse"></div>
+            </div>
+          </div>
+          <div class="menu-card overflow-hidden">
+            <div class="relative overflow-hidden h-56 bg-gray-100 animate-pulse">
+              <div class="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100"></div>
+            </div>
+            <div class="p-5">
+              <div class="h-5 bg-gray-100 rounded w-3/4 mb-3 animate-pulse"></div>
+              <div class="h-3 bg-gray-100 rounded w-full mb-4 animate-pulse"></div>
+              <div class="h-10 bg-gray-100 rounded w-full animate-pulse"></div>
+            </div>
+          </div>
+          <div class="menu-card overflow-hidden">
+            <div class="relative overflow-hidden h-56 bg-gray-100 animate-pulse">
+              <div class="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100"></div>
+            </div>
+            <div class="p-5">
+              <div class="h-5 bg-gray-100 rounded w-3/4 mb-3 animate-pulse"></div>
+              <div class="h-3 bg-gray-100 rounded w-full mb-4 animate-pulse"></div>
+              <div class="h-10 bg-gray-100 rounded w-full animate-pulse"></div>
+            </div>
+          </div>
+          <div class="menu-card overflow-hidden">
+            <div class="relative overflow-hidden h-56 bg-gray-100 animate-pulse">
+              <div class="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100"></div>
+            </div>
+            <div class="p-5">
+              <div class="h-5 bg-gray-100 rounded w-3/4 mb-3 animate-pulse"></div>
+              <div class="h-3 bg-gray-100 rounded w-full mb-4 animate-pulse"></div>
+              <div class="h-10 bg-gray-100 rounded w-full animate-pulse"></div>
+            </div>
+          </div>
+          <div class="menu-card overflow-hidden">
+            <div class="relative overflow-hidden h-56 bg-gray-100 animate-pulse">
+              <div class="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100"></div>
+            </div>
+            <div class="p-5">
+              <div class="h-5 bg-gray-100 rounded w-3/4 mb-3 animate-pulse"></div>
+              <div class="h-3 bg-gray-100 rounded w-full mb-4 animate-pulse"></div>
+              <div class="h-10 bg-gray-100 rounded w-full animate-pulse"></div>
+            </div>
+          </div>
+          <div class="menu-card overflow-hidden">
+            <div class="relative overflow-hidden h-56 bg-gray-100 animate-pulse">
+              <div class="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100"></div>
+            </div>
+            <div class="p-5">
+              <div class="h-5 bg-gray-100 rounded w-3/4 mb-3 animate-pulse"></div>
+              <div class="h-3 bg-gray-100 rounded w-full mb-4 animate-pulse"></div>
+              <div class="h-10 bg-gray-100 rounded w-full animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="menuGrid" class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6 xl:gap-8" style="display:none;">
+          <!-- Menu items inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDERS PAGE -->
+    <div id="ordersPage" class="page">
+      <div class="max-w-4xl mx-auto px-4 py-10">
+        <h1 class="font-display text-4xl font-bold mb-2">Your Orders</h1>
+        <p class="text-gray-600 mb-8">Track all your placed orders</p>
+
+        <div id="ordersEmpty" class="text-center py-16">
+          <p class="text-5xl mb-4">📋</p>
+          <p class="text-xl font-semibold text-gray-600 mb-4">No orders yet</p>
+          <a href="#menu" onclick="showPage('menu')" class="btn-primary">Browse Menu</a>
+        </div>
+
+        <div id="ordersList" class="space-y-4" style="display:none;">
+          <!-- Orders inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN PAGE -->
+    <div id="adminPage" class="page">
+      <div class="max-w-6xl mx-auto px-4 py-10">
+        <h1 class="font-display text-4xl font-bold mb-2">Order Management</h1>
+        <p class="text-gray-600 mb-8">Manage incoming orders</p>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div class="bg-white rounded-lg p-6 text-center shadow-md">
+            <p class="text-4xl font-bold text-primary" id="adminTotal">0</p>
+            <p class="text-gray-600 text-sm mt-2">Total Orders</p>
+          </div>
+          <div class="bg-white rounded-lg p-6 text-center shadow-md">
+            <p class="text-4xl font-bold text-green-500" id="adminConfirmed">0</p>
+            <p class="text-gray-600 text-sm mt-2">Confirmed</p>
+          </div>
+          <div class="bg-white rounded-lg p-6 text-center shadow-md">
+            <p class="text-4xl font-bold text-yellow-500" id="adminPreparing">0</p>
+            <p class="text-gray-600 text-sm mt-2">Preparing</p>
+          </div>
+          <div class="bg-white rounded-lg p-6 text-center shadow-md">
+            <p class="text-4xl font-bold text-gray-500" id="adminDelivered">0</p>
+            <p class="text-gray-600 text-sm mt-2">Delivered</p>
+          </div>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+          <div class="p-6 border-b">
+            <input id="adminSearch" placeholder="Search by name or order ID..." class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary" oninput="updateAdminTable()">
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="px-6 py-3 text-left text-sm font-semibold">Order ID</th>
+                  <th class="px-6 py-3 text-left text-sm font-semibold">Customer</th>
+                  <th class="px-6 py-3 text-left text-sm font-semibold">Items</th>
+                  <th class="px-6 py-3 text-left text-sm font-semibold">Total</th>
+                  <th class="px-6 py-3 text-left text-sm font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody id="adminTableBody">
+                <!-- Admin rows inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS PAGE -->
+    <div id="analyticsPage" class="page">
+      <div class="max-w-6xl mx-auto px-4 py-10">
+        <div class="flex justify-between items-start mb-8 flex-wrap gap-4">
+          <div>
+            <h1 class="font-display text-4xl font-bold">Analytics</h1>
+            <p class="text-gray-600">Track your sales performance</p>
+          </div>
+          <input id="analyticsDatePicker" type="date" class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary" onchange="loadAnalytics()">
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div class="bg-white rounded-lg p-6 shadow-md">
+            <p class="text-gray-600 text-sm mb-2">Total Revenue</p>
+            <p class="text-3xl font-bold text-primary" id="analyticsRevenue">₵0.00</p>
+            <p class="text-xs text-gray-500 mt-2">For <span id="analyticsDayLabel">today</span></p>
+          </div>
+          <div class="bg-white rounded-lg p-6 shadow-md">
+            <p class="text-gray-600 text-sm mb-2">Orders Placed</p>
+            <p class="text-3xl font-bold" id="analyticsOrders">0</p>
+            <p class="text-xs text-gray-500 mt-2">Individual orders</p>
+          </div>
+          <div class="bg-white rounded-lg p-6 shadow-md">
+            <p class="text-gray-600 text-sm mb-2">Avg Order Value</p>
+            <p class="text-3xl font-bold text-secondary" id="analyticsAvg">₵0.00</p>
+            <p class="text-xs text-gray-500 mt-2">Per order</p>
+          </div>
+        </div>
+
+        <!-- Food Sold & Orders -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-lg p-6 shadow-md">
+            <h3 class="text-xl font-bold mb-6">Food Sold Breakdown</h3>
+            <div id="foodSoldContainer">
+              <p class="text-center text-gray-500">No data for this date</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg p-6 shadow-md">
+            <h3 class="text-xl font-bold mb-6">Orders for <span id="analyticsDateLabel">today</span></h3>
+            <div id="ordersListContainer" class="space-y-3 max-h-96 overflow-y-auto">
+              <p class="text-center text-gray-500">No orders on this date</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- All-Time Summary -->
+        <div class="bg-white rounded-lg p-6 shadow-md mt-6">
+          <h3 class="text-xl font-bold mb-6">All-Time Summary</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="text-center">
+              <p class="text-2xl font-bold text-primary" id="summaryRevenue">₵0.00</p>
+              <p class="text-sm text-gray-500 mt-1">Total Revenue</p>
+            </div>
+            <div class="text-center">
+              <p class="text-2xl font-bold" id="summaryOrders">0</p>
+              <p class="text-sm text-gray-500 mt-1">Total Orders</p>
+            </div>
+            <div class="text-center">
+              <p class="text-2xl font-bold text-secondary" id="summaryItems">0</p>
+              <p class="text-sm text-gray-500 mt-1">Items Sold</p>
+            </div>
+            <div class="text-center">
+              <p class="text-2xl font-bold text-green-500" id="summaryMenuItems">0</p>
+              <p class="text-sm text-gray-500 mt-1">Menu Items</p>
+            </div>
+          </div>
+
+          <div id="summaryTableContainer" style="display:none;">
+            <h4 class="font-semibold mb-4">Top Sellers</h4>
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="px-4 py-2 text-left">Item</th>
+                  <th class="px-4 py-2 text-right">Sold</th>
+                  <th class="px-4 py-2 text-right">Revenue</th>
+                </tr>
+              </thead>
+              <tbody id="summaryTableBody">
+                <!-- Summary items inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CART MODAL -->
+  <div class="modal-overlay" id="cartModal" style="display:none" onclick="if(event.target === this) toggleCart()">
+    <div class="modal-box p-6" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="font-display text-2xl font-bold text-primary">Your Cart</h2>
+        <button onclick="toggleCart()" class="text-2xl text-gray-400 hover:text-gray-600">&times;</button>
+      </div>
+
+      <div id="cartEmpty" class="text-center py-8 text-gray-500">
+        <p class="text-4xl mb-3">🛒</p>
+        <p class="font-semibold">Cart is empty</p>
+        <p class="text-sm">Add some delicious fried rice</p>
+      </div>
+
+      <div id="cartFull" style="display:none">
+        <div id="cartItems" class="space-y-4 mb-4"></div>
+
+        <div class="mt-6 pt-4 border-t">
+          <div class="flex justify-between text-xl font-bold mb-6">
+            <span>Total:</span>
+            <span class="text-primary" id="cartTotalPrice">₵0.00</span>
+          </div>
+
+          <input id="checkoutName" placeholder="Your Name *" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
+          <input id="checkoutPhone" placeholder="Phone Number *" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-primary">
+
+          <button onclick="placeOrder()" id="placeOrderBtn" class="btn-primary w-full mt-4 py-3 rounded-lg">✓ Place Order</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS TOAST -->
+  <div id="successToast" style="display:none" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 flex gap-3">
+    <span class="text-2xl">✅</span>
+    <div>
+      <p class="font-bold">Order Placed!</p>
+      <p class="text-sm" id="toastOrderId"></p>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer class="mt-12">
+  <div class="page-shell py-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+    <!-- About -->
+    <div>
+      <h3 class="font-display text-xl font-bold mb-4">Scanty Meals</h3>
+      <p class="text-gray-400 text-sm mb-4">Premium fried rice delivered fresh to your door. Made with love, cooked with care.</p>
+      <p class="text-accent font-semibold">Est. 2026</p>
+    </div>
+
+    <!-- Contact -->
+    <div>
+      <h4 class="font-bold mb-4 text-white">Contact Us</h4>
+      <div class="space-y-3 text-gray-400 text-sm">
+        <p class="flex gap-3">
+          <span>📍</span>
+          <span>MPasatia junction, Sepaase</span>
+        </p>
+        <p class="flex gap-3">
+          <span>📞</span>
+          <a href="tel:0242292939" class="footer-link">0242292939</a>
+        </p>
+        <p class="flex gap-3">
+          <span>⏰</span>
+          <span>Daily: 10am - 10pm</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div>
+      <h4 class="font-bold mb-4 text-white">Quick Links</h4>
+      <ul class="space-y-2 text-sm text-gray-400">
+        <li><a href="#menu" onclick="showPage('menu')" class="footer-link">Menu</a></li>
+        <li><a href="#orders" onclick="showPage('orders')" class="footer-link">My Orders</a></li>
+        <li><a href="#analytics" onclick="showPage('analytics')" class="footer-link">Analytics</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Copyright -->
+  <div class="border-t border-gray-700 text-center py-6 text-gray-500 text-sm">
+    <p>&copy; 2026 Scanty Meals. All rights reserved. | Freshness Guaranteed ✓</p>
+  </div>
+</footer>
+
+<!-- VANILLA JAVASCRIPT -->
+<script>
+// ===== STATE =====
+const app = {
+  menu: [],
+  orders: [],
+  cart: [],
+  currentPage: 'menu',
+  user: null,
+  token: null
+};
+
+// ===== AUTHENTICATION =====
+function toggleAuthForm() {
+  document.getElementById('loginForm').style.display = document.getElementById('loginForm').style.display === 'none' ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = document.getElementById('registerForm').style.display === 'none' ? 'block' : 'none';
+}
+
+function applySuccessfulLogin(authData) {
+  localStorage.setItem('token', authData.token);
+  localStorage.setItem('user', JSON.stringify(authData.user));
+  app.token = authData.token;
+  app.user = authData.user;
+
+  const authError = document.getElementById('authError');
+  if (authError) {
+    authError.style.display = 'none';
+    authError.textContent = '';
+  }
+
+  // login page was removed; just update UI
+  updateUserInfo();
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('analyticsDatePicker').value = today;
+  fetchMenu();
+  fetchOrders();
+}
+
+window.applySuccessfulLogin = applySuccessfulLogin;
+
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  
+  if (!email || !password) {
+    showAuthError('Please fill in all fields');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      applySuccessfulLogin(data);
+    } else {
+      showAuthError(data.message || 'Login failed');
+    }
+  } catch (err) {
+    showAuthError('Connection error. Make sure backend is running.');
+  }
+}
+
+async function handleRegister() {
+  const name = document.getElementById('regName').value;
+  const email = document.getElementById('regEmail').value;
+  const password = document.getElementById('regPassword').value;
+  
+  if (!name || !email || !password) {
+    showAuthError('Please fill in all fields');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, role: 'customer' })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      showAuthError('Account created! Now sign in.', 'success');
+      setTimeout(() => toggleAuthForm(), 1500);
+    } else {
+      showAuthError(data.message || 'Registration failed');
+    }
+  } catch (err) {
+    showAuthError('Connection error. Make sure backend is running.');
+  }
+}
+
+function showAuthError(msg, type = 'error') {
+  const err = document.getElementById('authError');
+  if (!err) return;
+  err.textContent = msg;
+  err.style.display = 'block';
+  if (type === 'success') err.style.color = '#28a745';
+  else err.style.color = '#dc3545';
+}
+
+function hideLoginPage() {
+  // login page removed; keep this safe to avoid runtime errors if called
+  const loginPage = document.getElementById('loginPage');
+  const appEl = document.getElementById('app');
+  if (loginPage) loginPage.style.display = 'none';
+  if (appEl) appEl.style.display = 'block';
+}
+
+function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  app.token = null;
+  app.user = null;
+  location.reload();
+}
+
+function updateUserInfo() {
+  if (app.user) {
+    document.getElementById('userName').textContent = app.user.name;
+    document.getElementById('userRole').textContent = app.user.role.toUpperCase();
+    
+    // Show admin link if admin
+    if (app.user.role === 'admin') {
+      document.getElementById('adminLink').style.display = 'block';
+      if(document.getElementById('mobileAdminLink')) {
+         document.getElementById('mobileAdminLink').style.display = 'block';
+      }
+    }
+  }
+}
+
+function getHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  if (app.token) {
+    headers['Authorization'] = `Bearer ${app.token}`;
+  }
+  return headers;
+}
+
+// ===== API CALLS =====
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'scantymeals-shop-1.onrender.com'
+  ? '' 
+  : 'https://scantymeals-shop-1.onrender.com';
+
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+  if (typeof args[0] === 'string' && args[0].startsWith('/api/')) {
+    args[0] = API_BASE + args[0];
+  }
+  const res = await originalFetch.apply(this, args);
+  // If authorized request fails with 401, token is likely expired.
+  if (res.status === 401 && !args[0].includes('/api/auth/login')) {
+    logout();
+    throw new Error('Unauthorized (Session Expired)');
+  }
+  return res;
+};
+
+async function fetchMenu() {
+  // Always show something quickly (avoid long blank/loading state)
+  try {
+    document.getElementById('menuCount').textContent = 'Loading menu...';
+    document.getElementById('menuGrid').innerHTML = '';
+    const skel = document.getElementById('menuSkeleton');
+    const grid = document.getElementById('menuGrid');
+    if (skel) skel.style.display = 'grid';
+    if (grid) grid.style.display = 'none';
+  } catch (_) {}
+
+  // 1) Try backend first (if token exists it will load; if not, backend may 401)
+  // Use originalFetch so a 401 for /api/menu doesn't trigger the global logout handler.
+  try {
+    const menuUrl = API_BASE ? `${API_BASE}/api/menu` : '/api/menu';
+    const res = await originalFetch(menuUrl, {
+      headers: getHeaders()
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success) {
+        app.menu = data.items;
+        renderMenu();
+
+        // toggle skeleton -> grid
+        const skel = document.getElementById('menuSkeleton');
+        const grid = document.getElementById('menuGrid');
+        if (skel) skel.style.display = 'none';
+        if (grid) grid.style.display = 'grid';
+        return;
+      }
+    }
+  } catch (err) {
+    // fall through to fallback
+    console.warn('Error fetching menu from backend; using fallback:', err);
+  }
+
+  // 2) Fallback to local meals.json so UI opens instantly
+  try {
+    const candidates = [
+      '/meals.json',
+      'meals.json',
+      `/meals.json?cachebust=${Date.now()}`
+    ];
+
+    let fallback = null;
+    for (const url of candidates) {
+      try {
+        const fallbackRes = await fetch(url, { cache: 'no-store' });
+        if (fallbackRes.ok) {
+          fallback = await fallbackRes.json();
+          break;
+        }
+      } catch (_) {}
+    }
+
+    if (!fallback) throw new Error('Unable to fetch meals.json');
+
+    // Map to backend shape expected by renderMenu()
+    app.menu = (fallback || []).map((m, idx) => ({
+      id: m.id ?? (idx + 1),
+      name: m.name,
+      price: m.price,
+      category: m.category,
+      description: m.description ?? '',
+      image: m.image,
+      available: m.available ?? true
+    }));
+
+    renderMenu();
+    document.getElementById('menuCount').textContent = `${app.menu.length} varieties to choose from`;
+
+    // toggle skeleton -> grid
+    const skel = document.getElementById('menuSkeleton');
+    const grid = document.getElementById('menuGrid');
+    if (skel) skel.style.display = 'none';
+    if (grid) grid.style.display = 'grid';
+  } catch (err2) {
+    console.error('Menu fallback failed:', err2);
+    document.getElementById('menuCount').textContent = 'Unable to load menu.';
+  }
+}
+
+async function fetchOrders() {
+  try {
+    const res = await fetch('/api/orders', {
+      headers: getHeaders()
+    });
+    const data = await res.json();
+    if (data.success) {
+      app.orders = data.orders;
+      renderOrders();
+      updateAdminTable();
+    }
+  } catch (err) {
+    console.error('Error fetching orders:', err);
+  }
+}
+
+async function createOrder(name, phone) {
+  if (!name || !phone) return;
+  
+  const items = app.cart.map(i => ({ 
+    name: i.name, 
+    price: i.price, 
+    quantity: i.quantity 
+  }));
+  const total = cartTotal();
+  
+  try {
+    const res = await fetch('/api/orders', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ customer_name: name, customer_phone: phone, items, total })
+    });
+    const data = await res.json();
+    if (data.success) {
+      app.orders.unshift(data.order);
+      app.cart = [];
+      toggleCart();
+      showToast(data.order.id);
+      fetchOrders();
+    }
+  } catch (err) {
+    console.error('Error creating order:', err);
+  }
+}
+
+async function updateOrderStatus(orderId, status) {
+  try {
+    const res = await fetch(`/api/orders/${orderId}/status`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json();
+    if (data.success) {
+      fetchOrders();
+    }
+  } catch (err) {
+    console.error('Error updating status:', err);
+  }
+}
+
+async function fetchAnalytics(date) {
+  try {
+    const params = date ? `?date=${date}` : '';
+    const res = await fetch(`/api/analytics/daily${params}`, {
+      headers: getHeaders()
+    });
+    const data = await res.json();
+    return data.success ? data : { total_revenue: 0, total_orders: 0, food_sold: {}, orders: [] };
+  } catch (err) {
+    console.error('Error fetching daily analytics:', err);
+    return { total_revenue: 0, total_orders: 0, food_sold: {}, orders: [] };
+  }
+}
+
+async function fetchSummary() {
+  try {
+    const res = await fetch('/api/analytics/summary', {
+      headers: getHeaders()
+    });
+    const data = await res.json();
+    return data.success ? data : { total_revenue: 0, total_orders: 0, food_sold: {} };
+  } catch (err) {
+    console.error('Error fetching summary:', err);
+    return { total_revenue: 0, total_orders: 0, food_sold: {} };
+  }
+}
+
+// ===== RENDERING =====
+function renderMenu() {
+  const grid = document.getElementById('menuGrid');
+  const count = document.getElementById('menuCount');
+  
+  grid.innerHTML = app.menu.map(item => `
+    <div class="menu-card">
+      <div class="relative overflow-hidden h-56">
+        <img src="${item.image}" alt="${item.name}" loading="lazy" decoding="async" class="w-full h-full object-cover">
+        <div class="absolute top-3 left-3">
+          <span class="tag tag-${item.category.toLowerCase()}">${item.category}</span>
+        </div>
+        <div class="absolute bottom-3 right-3 bg-white/95 px-3 py-1 rounded-lg">
+          <span class="text-primary font-bold">₵${item.price.toFixed(2)}</span>
+        </div>
+      </div>
+      <div class="p-5">
+        <h3 class="font-bold text-lg mb-2">${item.name}</h3>
+        <p class="text-gray-600 text-sm mb-4">${item.description}</p>
+        <button onclick="addToCart(${item.id})" class="btn-primary w-full">+ Add to Cart</button>
+      </div>
+    </div>
+  `).join('');
+  
+  count.textContent = `${app.menu.length} varieties to choose from`;
+}
+
+function renderOrders() {
+  const list = document.getElementById('ordersList');
+  const empty = document.getElementById('ordersEmpty');
+  
+  if (app.orders.length === 0) {
+    list.style.display = 'none';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    list.style.display = 'block';
+    list.innerHTML = app.orders.map(order => `
+      <div class="bg-white rounded-lg p-6 shadow-md">
+        <div class="flex justify-between mb-4">
+          <div>
+            <p class="text-primary font-mono font-bold">${order.id}</p>
+            <p class="font-semibold">${order.customer_name}</p>
+            <p class="text-sm text-gray-500">${new Date(order.timestamp).toLocaleDateString()} ${new Date(order.timestamp).toLocaleTimeString()}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-2xl font-bold text-primary">₵${order.total.toFixed(2)}</p>
+            <span class="status-badge status-${order.status.toLowerCase()}">${order.status}</span>
+          </div>
+        </div>
+        <div class="border-t pt-4">
+          ${order.items.map(item => `
+            <div class="flex justify-between text-sm py-1">
+              <span>${item.quantity}× ${item.name}</span>
+              <span>₵${(item.price * item.quantity).toFixed(2)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+function updateAdminTable() {
+  const search = document.getElementById('adminSearch').value.toLowerCase();
+  const tbody = document.getElementById('adminTableBody');
+  const total = document.getElementById('adminTotal');
+  const confirmed = document.getElementById('adminConfirmed');
+  const preparing = document.getElementById('adminPreparing');
+  const delivered = document.getElementById('adminDelivered');
+
+  const filtered = app.orders.filter(o => 
+    o.id.toLowerCase().includes(search) || 
+    o.customer_name.toLowerCase().includes(search)
+  );
+
+  tbody.innerHTML = filtered.map(order => `
+    <tr class="border-b hover:bg-gray-50">
+      <td class="px-6 py-4 text-primary font-mono font-bold">${order.id}</td>
+      <td class="px-6 py-4">
+        <p class="font-semibold">${order.customer_name}</p>
+        <p class="text-sm text-gray-500">${order.customer_phone}</p>
+      </td>
+      <td class="px-6 py-4">
+        ${order.items.map(item => `<div class="text-sm">${item.quantity}× ${item.name}</div>`).join('')}
+      </td>
+      <td class="px-6 py-4 font-bold text-primary">₵${order.total.toFixed(2)}</td>
+      <td class="px-6 py-4">
+        <select onchange="updateOrderStatus('${order.id}', this.value)" class="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary">
+          <option value="Confirmed" ${order.status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
+          <option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option>
+          <option value="Ready" ${order.status === 'Ready' ? 'selected' : ''}>Ready</option>
+          <option value="Delivered" ${order.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+        </select>
+      </td>
+    </tr>
+  `).join('');
+
+  // Update stats
+  total.textContent = app.orders.length;
+  confirmed.textContent = app.orders.filter(o => o.status === 'Confirmed').length;
+  preparing.textContent = app.orders.filter(o => o.status === 'Preparing').length;
+  delivered.textContent = app.orders.filter(o => o.status === 'Delivered').length;
+}
+
+async function loadAnalytics() {
+  const datePicker = document.getElementById('analyticsDatePicker');
+  const selectedDate = datePicker.value;
+  
+  const daily = await fetchAnalytics(selectedDate);
+  const summary = await fetchSummary();
+
+  // Update daily stats
+  document.getElementById('analyticsRevenue').textContent = '₵' + daily.total_revenue.toFixed(2);
+  document.getElementById('analyticsOrders').textContent = daily.total_orders;
+  document.getElementById('analyticsAvg').textContent = '₵' + (daily.total_orders > 0 ? (daily.total_revenue / daily.total_orders).toFixed(2) : '0.00');
+  document.getElementById('analyticsDayLabel').textContent = selectedDate ? new Date(selectedDate).toLocaleDateString() : 'today';
+  document.getElementById('analyticsDateLabel').textContent = selectedDate ? new Date(selectedDate).toLocaleDateString() : 'today';
+
+  // Food sold breakdown
+  if (Object.keys(daily.food_sold).length > 0) {
+    document.getElementById('foodSoldContainer').innerHTML = Object.entries(daily.food_sold).map(([name, qty]) => {
+      const maxQty = Math.max(...Object.values(daily.food_sold));
+      const width = Math.max(5, (qty / maxQty) * 100);
+      return `
+        <div class="mb-4">
+          <div class="flex justify-between mb-1">
+            <span class="font-semibold text-sm">${name}</span>
+            <span class="text-primary font-bold">${qty} sold</span>
+          </div>
+          <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-primary to-secondary" style="width: ${width}%"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    document.getElementById('foodSoldContainer').innerHTML = '<p class="text-center text-gray-500">No data for this date</p>';
+  }
+
+  // Orders for date
+  if (daily.orders.length > 0) {
+    document.getElementById('ordersListContainer').innerHTML = daily.orders.map(o => `
+      <div class="bg-gray-50 rounded p-4">
+        <p class="text-primary font-mono text-sm font-bold">${o.id}</p>
+        <p class="font-semibold">${o.customer_name}</p>
+        <div class="flex justify-between mt-2">
+          <p class="text-sm text-gray-600">${o.items.length} items</p>
+          <p class="font-bold text-primary">₵${o.total.toFixed(2)}</p>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('ordersListContainer').innerHTML = '<p class="text-center text-gray-500">No orders on this date</p>';
+  }
+
+  // Summary stats
+  document.getElementById('summaryRevenue').textContent = '₵' + summary.total_revenue.toFixed(2);
+  document.getElementById('summaryOrders').textContent = summary.total_orders;
+  document.getElementById('summaryItems').textContent = Object.values(summary.food_sold).reduce((a,b) => a+b, 0);
+  document.getElementById('summaryMenuItems').textContent = Object.keys(summary.food_sold).length;
+
+  if (Object.keys(summary.food_sold).length > 0) {
+    document.getElementById('summaryTableContainer').style.display = 'block';
+    document.getElementById('summaryTableBody').innerHTML = Object.entries(summary.food_sold).map(([name, qty]) => {
+      const item = app.menu.find(m => m.name === name);
+      const revenue = item ? item.price * qty : 0;
+      return `
+        <tr class="border-b hover:bg-gray-50">
+          <td class="px-4 py-2">${name}</td>
+          <td class="px-4 py-2 text-right font-semibold">${qty}</td>
+          <td class="px-4 py-2 text-right font-bold text-primary">₵${revenue.toFixed(2)}</td>
+        </tr>
+      `;
+    }).join('');
+  } else {
+    document.getElementById('summaryTableContainer').style.display = 'none';
+  }
+}
+
+// ===== CART FUNCTIONS =====
+function addToCart(itemId) {
+  const item = app.menu.find(m => m.id === itemId);
+  if (!item) return;
+
+  const existing = app.cart.find(c => c.id === itemId);
+  if (existing) {
+    existing.quantity++;
+  } else {
+    app.cart.push({ ...item, quantity: 1 });
+  }
+  updateCart();
+  toggleCart();
+}
+
+function updateQty(itemId, delta) {
+  const item = app.cart.find(c => c.id === itemId);
+  if (!item) return;
+  item.quantity += delta;
+  if (item.quantity <= 0) {
+    app.cart = app.cart.filter(c => c.id !== itemId);
+  }
+  updateCart();
+}
+
+function cartTotal() {
+  return app.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+
+function updateCart() {
+  const badge = document.getElementById('cartBadge');
+  const count = app.cart.reduce((sum, item) => sum + item.quantity, 0);
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'flex' : 'none';
+
+  const empty = document.getElementById('cartEmpty');
+  const full = document.getElementById('cartFull');
+  const items = document.getElementById('cartItems');
+  const totalPrice = document.getElementById('cartTotalPrice');
+
+  if (app.cart.length === 0) {
+    empty.style.display = 'block';
+    full.style.display = 'none';
+  } else {
+    empty.style.display = 'none';
+    full.style.display = 'block';
+    items.innerHTML = app.cart.map(item => `
+      <div class="flex gap-4 py-4 border-b">
+        <img src="${item.image}" class="w-16 h-16 rounded-lg object-cover">
+        <div class="flex-1">
+          <p class="font-semibold text-sm">${item.name}</p>
+          <p class="text-primary font-bold">₵${item.price.toFixed(2)}</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="updateQty(${item.id}, -1)" class="w-7 h-7 rounded border border-primary text-primary text-sm font-bold hover:bg-primary hover:text-white">−</button>
+          <span class="w-6 text-center">${item.quantity}</span>
+          <button onclick="updateQty(${item.id}, 1)" class="w-7 h-7 rounded border border-primary text-primary text-sm font-bold hover:bg-primary hover:text-white">+</button>
+        </div>
+      </div>
+    `).join('');
+    totalPrice.textContent = '₵' + cartTotal().toFixed(2);
+  }
+}
+
+function toggleCart() {
+  const modal = document.getElementById('cartModal');
+  modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+}
+
+function placeOrder() {
+  const name = document.getElementById('checkoutName').value;
+  const phone = document.getElementById('checkoutPhone').value;
+  if (!name || !phone) {
+    alert('Please enter your name and phone number');
+    return;
+  }
+  createOrder(name, phone);
+  document.getElementById('checkoutName').value = '';
+  document.getElementById('checkoutPhone').value = '';
+}
+
+// ===== PAGE NAVIGATION =====
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobileMenu');
+  menu.classList.toggle('hidden');
+}
+
+function showPage(pageId) {
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // Update nav links
+  document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+  
+  // Show selected page
+  const page = document.getElementById(pageId + 'Page');
+  if (page) {
+    page.classList.add('active');
+    // Find and highlight nav link
+    document.querySelectorAll(`.nav-link`).forEach(link => {
+      if (link.href.includes('#' + pageId)) {
+        link.classList.add('active');
+      }
+    });
+  }
+
+  app.currentPage = pageId;
+
+  // Load data if needed
+  if (pageId === 'orders') fetchOrders();
+  if (pageId === 'admin') fetchOrders();
+  if (pageId === 'analytics') loadAnalytics();
+}
+
+// ===== NOTIFICATIONS =====
+function showToast(orderId) {
+  const toast = document.getElementById('successToast');
+  document.getElementById('toastOrderId').textContent = orderId + ' confirmed';
+  toast.style.display = 'flex';
+  setTimeout(() => { toast.style.display = 'none'; }, 3000);
+}
+
+// ===== INIT =====
+window.addEventListener('DOMContentLoaded', () => {
+  // Always reveal app shell first so auth parsing issues cannot blank the page.
+  document.getElementById('app').style.display = 'block';
+
+  // Check if user is already logged in
+  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
+
+  if (token && user) {
+    try {
+      app.token = token;
+      app.user = JSON.parse(user);
+      updateUserInfo();
+    } catch (e) {
+      console.warn('Invalid stored user session, clearing auth state:', e);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      app.token = null;
+      app.user = null;
+    }
+  }
+
+  // Hide splash after a moment, and load menu immediately regardless of login.
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hidden');
+
+    // Menu should appear fast even without auth
+    fetchMenu();
+
+    // Only load user-specific data when logged in
+    if (app.user) {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('analyticsDatePicker').value = today;
+      fetchOrders();
+      // analytics loads when user navigates to it
+    }
+  }, 600);
+});
+</script>
+
+</body>
+</html>
