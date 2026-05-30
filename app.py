@@ -8,16 +8,10 @@ from pymongo import ReturnDocument
 from bson.objectid import ObjectId
 import json
 import os
-import random
 import jwt
 import bcrypt
 import base64
 from functools import wraps
-
-try:
-    import requests
-except Exception:
-    requests = None
 
 app = Flask(__name__, static_folder='.')
 CORS(app)
@@ -70,13 +64,6 @@ def add_header(response):
 # JWT Secret Key
 JWT_SECRET = os.getenv('JWT_SECRET', 'your-secret-key-change-in-production')
 JWT_ALGORITHM = 'HS256'
-OTP_EXPIRY_MINUTES = int(os.getenv('OTP_EXPIRY_MINUTES', '5'))
-DEBUG_OTP = os.getenv('DEBUG_OTP', 'true').lower() == 'true'
-HUBTEL_CLIENT_ID = os.getenv('HUBTEL_CLIENT_ID', '').strip()
-HUBTEL_CLIENT_SECRET = os.getenv('HUBTEL_CLIENT_SECRET', '').strip()
-HUBTEL_SENDER_ID = os.getenv('HUBTEL_SENDER_ID', 'ScantyMeals').strip()
-HUBTEL_COUNTRY_CODE = os.getenv('HUBTEL_COUNTRY_CODE', 'GH').strip()
-HUBTEL_BASE_URL = os.getenv('HUBTEL_BASE_URL', '').strip()
 
 # MongoDB connection
 MONGO_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
@@ -88,7 +75,6 @@ try:
     orders_collection = db['orders']
     order_counter_collection = db['counters']
     users_collection = db['users']
-    otp_codes_collection = db['otp_codes']
     MONGODB_CONNECTED = True
 except Exception as e:
     print(f"Warning: MongoDB connection failed ({e}). Using in-memory storage.")
@@ -113,7 +99,6 @@ except Exception as e:
             "role": "customer"
         }
     ]
-    otp_codes_db = []
 
 MENU_ITEMS = [
     {
@@ -249,137 +234,6 @@ def normalize_phone(phone_raw):
         return None
 
     return '+' + digits
-
-def generate_otp():
-    return f"{random.randint(0, 999999):06d}"
-
-def hubtel_configured():
-    return bool(HUBTEL_CLIENT_ID and HUBTEL_CLIENT_SECRET and requests is not None)
-
-def _hubtel_base_candidates():
-    candidates = []
-    if HUBTEL_BASE_URL:
-        candidates.append(HUBTEL_BASE_URL.rstrip('/'))
-    # Common Hubtel API base URLs (can be overridden with HUBTEL_BASE_URL)
-    candidates.extend([
-        "https://smsc.hubtel.com/v1",
-        "https://devp-sms03726-api.hubtel.com/v1"
-    ])
-    # Keep ordering while removing duplicates
-    ordered = []
-    for base in candidates:
-        if base and base not in ordered:
-            ordered.append(base)
-    return ordered
-
-def hubtel_send_otp(phone):
-    payload = {
-        "senderId": HUBTEL_SENDER_ID,
-        "phoneNumber": phone,
-        "countryCode": HUBTEL_COUNTRY_CODE
-    }
-
-    last_error = "Hubtel OTP request failed"
-    for base_url in _hubtel_base_candidates():
-        url = f"{base_url}/otp/send"
-        try:
-            res = requests.post(
-                url,
-                json=payload,
-                auth=(HUBTEL_CLIENT_ID, HUBTEL_CLIENT_SECRET),
-                timeout=15
-            )
-            data = res.json() if res.headers.get("content-type", "").startswith("application/json") else {}
-
-            if res.status_code == 200:
-                return True, data, None
-
-            last_error = data.get("message") or f"Hubtel send OTP failed ({res.status_code})"
-        except Exception as exc:
-            last_error = f"Hubtel send OTP error: {str(exc)}"
-
-    return False, None, last_error
-
-def hubtel_verify_otp(request_id, prefix, otp_code):
-    payload = {
-        "requestId": request_id,
-        "prefix": prefix,
-        "code": otp_code
-    }
-
-    last_error = "Hubtel OTP verification failed"
-    for base_url in _hubtel_base_candidates():
-        url = f"{base_url}/otp/verify"
-        try:
-            res = requests.post(
-                url,
-                json=payload,
-                auth=(HUBTEL_CLIENT_ID, HUBTEL_CLIENT_SECRET),
-                timeout=15
-            )
-            data = res.json() if res.headers.get("content-type", "").startswith("application/json") else {}
-
-            if res.status_code == 200:
-                status = str(data.get("status", "")).lower()
-                # Some Hubtel responses include status in body; treat explicit failure as error.
-                if status and status not in ("success", "ok", "verified", "completed"):
-                    last_error = data.get("message") or "OTP could not be verified"
-                    continue
-                return True, data, None
-
-            last_error = data.get("message") or f"Hubtel verify OTP failed ({res.status_code})"
-        except Exception as exc:
-            last_error = f"Hubtel verify OTP error: {str(exc)}"
-
-    return False, None, last_error
-
-def save_otp_code(phone, otp_code):
-    expires_at = datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES)
-    if MONGODB_CONNECTED:
-        otp_codes_collection.update_one(
-            {"phone": phone},
-            {"$set": {
-                "phone": phone,
-                "otp": otp_code,
-                "used": False,
-                "expires_at": expires_at,
-                "created_at": datetime.utcnow().isoformat()
-            }},
-            upsert=True
-        )
-    else:
-        otp_codes_db[:] = [o for o in otp_codes_db if o.get("phone") != phone]
-        otp_codes_db.append({
-            "phone": phone,
-            "otp": otp_code,
-            "used": False,
-            "expires_at": expires_at
-        })
-
-def verify_and_consume_otp(phone, otp_code):
-    now = datetime.utcnow()
-    if MONGODB_CONNECTED:
-        otp_doc = otp_codes_collection.find_one({
-            "phone": phone,
-            "otp": otp_code,
-            "used": False,
-            "expires_at": {"$gt": now}
-        })
-        if not otp_doc:
-            return False
-        otp_codes_collection.update_one({"_id": otp_doc["_id"]}, {"$set": {"used": True}})
-        return True
-
-    for otp_doc in otp_codes_db:
-        if (
-            otp_doc.get("phone") == phone and
-            otp_doc.get("otp") == otp_code and
-            not otp_doc.get("used") and
-            otp_doc.get("expires_at") > now
-        ):
-            otp_doc["used"] = True
-            return True
-    return False
 
 def get_or_create_user_by_phone(phone, name=''):
     display_name = (name or f"Customer {phone[-4:]}").strip()
@@ -581,99 +435,31 @@ def google_login():
         }
     }), 200
 
-@app.route('/api/auth/request-otp', methods=['POST'])
-def request_phone_otp():
-    """Send OTP for phone login. Uses Hubtel when configured."""
+@app.route('/api/auth/firebase-phone', methods=['POST'])
+def firebase_phone_login():
+    """Create app session after Firebase phone verification on the client."""
     data = request.json or {}
     phone = normalize_phone(data.get('phone'))
-
-    if not phone:
-        return jsonify({"success": False, "message": "Valid phone number is required"}), 400
-
-    if hubtel_configured():
-        ok, hubtel_data, error_msg = hubtel_send_otp(phone)
-        if not ok:
-            return jsonify({
-                "success": False,
-                "message": error_msg or "Unable to send OTP via Hubtel"
-            }), 502
-
-        hubtel_payload = hubtel_data or {}
-        hubtel_tokens = hubtel_payload.get("data", {}) if isinstance(hubtel_payload.get("data"), dict) else {}
-        request_id = hubtel_tokens.get("requestId")
-        prefix = hubtel_tokens.get("prefix")
-
-        if not request_id or not prefix:
-            return jsonify({
-                "success": False,
-                "message": "Hubtel OTP response missing verification tokens"
-            }), 502
-
-        return jsonify({
-            "success": True,
-            "message": hubtel_payload.get("message", "OTP sent successfully"),
-            "phone": phone,
-            "provider": "hubtel",
-            "request_id": request_id,
-            "prefix": prefix
-        }), 200
-
-    # Local fallback (dev/testing only)
-    otp_code = generate_otp()
-    save_otp_code(phone, otp_code)
-    print(f"[OTP] phone={phone} code={otp_code}")
-
-    response = {
-        "success": True,
-        "message": "OTP sent successfully",
-        "phone": phone,
-        "expires_in_minutes": OTP_EXPIRY_MINUTES,
-        "provider": "local"
-    }
-    # For development/demo where no SMS provider is configured yet.
-    if DEBUG_OTP:
-        response["otp_preview"] = otp_code
-
-    return jsonify(response), 200
-
-@app.route('/api/auth/verify-otp', methods=['POST'])
-def verify_phone_otp():
-    """Verify OTP and issue JWT session."""
-    data = request.json or {}
-    phone = normalize_phone(data.get('phone'))
-    otp_code = (data.get('otp') or '').strip()
+    firebase_uid = (data.get('firebase_uid') or '').strip()
     name = (data.get('name') or '').strip()
-    request_id = (data.get('request_id') or '').strip()
-    prefix = (data.get('prefix') or '').strip()
 
-    if not phone or not otp_code:
-        return jsonify({"success": False, "message": "Phone and OTP are required"}), 400
-
-    verified = False
-
-    if hubtel_configured():
-        if not request_id or not prefix:
-            return jsonify({
-                "success": False,
-                "message": "Missing Hubtel OTP verification tokens (request_id/prefix)"
-            }), 400
-
-        ok, _, error_msg = hubtel_verify_otp(request_id, prefix, otp_code)
-        if not ok:
-            return jsonify({
-                "success": False,
-                "message": error_msg or "Invalid or expired OTP"
-            }), 401
-        verified = True
-    else:
-        verified = verify_and_consume_otp(phone, otp_code)
-
-    if not verified:
-        return jsonify({"success": False, "message": "Invalid or expired OTP"}), 401
+    if not phone or not firebase_uid:
+        return jsonify({"success": False, "message": "Phone and firebase_uid are required"}), 400
 
     user = get_or_create_user_by_phone(phone, name)
-    token = create_jwt_token(user['_id'], user['email'], user.get('role', 'customer'))
 
+    if MONGODB_CONNECTED:
+        users_collection.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"firebase_uid": firebase_uid, "provider": "firebase_phone"}}
+        )
+        user["firebase_uid"] = firebase_uid
+        user["provider"] = "firebase_phone"
+    else:
+        user["firebase_uid"] = firebase_uid
+        user["provider"] = "firebase_phone"
+
+    token = create_jwt_token(user['_id'], user.get('email', ''), user.get('role', 'customer'))
     return jsonify({
         "success": True,
         "token": token,

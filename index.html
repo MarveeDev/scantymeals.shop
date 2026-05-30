@@ -13,11 +13,12 @@
 
  <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
   import {
     getAuth,
     GoogleAuthProvider,
-    signInWithPopup
+    RecaptchaVerifier,
+    signInWithPopup,
+    signInWithPhoneNumber
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   const firebaseConfig = {
@@ -26,68 +27,75 @@
     projectId: "scanty-meals",
     storageBucket: "scanty-meals.firebasestorage.app",
     messagingSenderId: "441632174969",
-    appId: "1:441632174969:web:4218799226a1179694b5a8",
-    measurementId: "G-VGFEC6VZ2T"
+    appId: "1:441632174969:web:966b7f634f39af6294b5a8",
+    measurementId: "G-JNRPCRSD2M"
   };
 
   const firebaseApp = initializeApp(firebaseConfig);
   const auth = getAuth(firebaseApp);
 
-  window.signInWithGoogle = async function () {
-
-    try {
-
-        const provider = new GoogleAuthProvider();
-
-        const result = await signInWithPopup(auth, provider);
-
-        const user = result.user;
-
-        console.log("SUCCESS:", user);
-
-        localStorage.setItem(
-            "googleUser",
-            JSON.stringify({
-                name: user.displayName,
-                email: user.email,
-                photo: user.photoURL
-            })
-        );
-
-        const sessionRes = await fetch("/api/auth/google", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                email: user.email,
-                name: user.displayName || "Google User",
-                firebase_uid: user.uid
-            })
-        });
-
-        const sessionData = await sessionRes.json();
-
-        if (!sessionRes.ok || !sessionData.success) {
-            throw new Error(sessionData.message || "Google session creation failed");
-        }
-
-        localStorage.setItem("token", sessionData.token);
-        localStorage.setItem("user", JSON.stringify(sessionData.user));
-
-        // Keep redirect on same origin to preserve localStorage auth session.
-        if (window.location.hostname === "scantymeals.shop" || window.location.hostname === "www.scantymeals.shop") {
-            window.location.href = "https://scantymeals.shop";
-        } else {
-            window.location.href = "/";
-        }
-
-    } catch (error) {
-
-        console.error(error);
-        alert(error.message);
-
+  function ensureRecaptcha() {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        auth,
+        'recaptcha-container',
+        { size: 'normal' }
+      );
     }
-}
-   </script>
+    return window.recaptchaVerifier;
+  }
+
+  window.sendFirebaseOTP = async function (phoneNumber) {
+    const appVerifier = ensureRecaptcha();
+    const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+    window.confirmationResult = confirmationResult;
+    return { success: true };
+  };
+
+  window.verifyFirebaseOTP = async function (otpCode) {
+    if (!window.confirmationResult) {
+      throw new Error("OTP session not found. Please send OTP again.");
+    }
+    const result = await window.confirmationResult.confirm(otpCode);
+    return {
+      success: true,
+      user: {
+        uid: result.user.uid,
+        phoneNumber: result.user.phoneNumber || ""
+      }
+    };
+  };
+
+  window.signInWithGoogle = async function () {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const sessionRes = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user.email,
+          name: user.displayName || "Google User",
+          firebase_uid: user.uid
+        })
+      });
+
+      const sessionData = await sessionRes.json();
+      if (!sessionRes.ok || !sessionData.success) {
+        throw new Error(sessionData.message || "Google session creation failed");
+      }
+
+      localStorage.setItem("token", sessionData.token);
+      localStorage.setItem("user", JSON.stringify(sessionData.user));
+      window.location.href = "/";
+    } catch (error) {
+      console.error(error);
+      alert(error.message);
+    }
+  };
+ </script>
 
   <script>
     tailwind.config = {
@@ -434,6 +442,7 @@
       <button onclick="verifyPhoneOtp()" class="btn-primary w-full">Confirm OTP</button>
     </div>
 
+    <div id="recaptcha-container" class="mt-4"></div>
     <p id="phoneAuthStatus" class="text-sm mt-4 text-gray-600"></p>
   </div>
 </div>
@@ -844,8 +853,7 @@ const app = {
   cart: [],
   currentPage: 'menu',
   user: null,
-  token: null,
-  otpSession: null
+  token: null
 };
 
 // ===== AUTHENTICATION =====
@@ -884,8 +892,20 @@ function showPhoneAuthModal(message = 'Enter your phone number to receive OTP.')
   if (msg) msg.textContent = message;
   if (otpSection) otpSection.style.display = 'none';
   if (otpInput) otpInput.value = '';
-  app.otpSession = null;
+  window.confirmationResult = null;
   setPhoneAuthStatus('');
+}
+
+function normalizePhoneForFirebase(rawPhone) {
+  const digits = (rawPhone || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length === 10 && digits.startsWith('0')) {
+    return '+233' + digits.slice(1);
+  }
+  if (digits.startsWith('233')) {
+    return '+' + digits;
+  }
+  return '+' + digits;
 }
 
 function hidePhoneAuthModal() {
@@ -900,36 +920,24 @@ async function requestPhoneOtp() {
     return;
   }
 
+  const firebasePhone = normalizePhoneForFirebase(phone);
+  if (!firebasePhone.startsWith('+') || firebasePhone.length < 11) {
+    setPhoneAuthStatus('Enter a valid phone number (e.g. 024xxxxxxx).', 'error');
+    return;
+  }
+
   setPhoneAuthStatus('Sending OTP...');
 
   try {
-    const endpoint = API_BASE ? `${API_BASE}/api/auth/request-otp` : '/api/auth/request-otp';
-    const res = await originalFetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone })
-    });
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok || !data.success) {
-      throw new Error(data.message || 'Failed to send OTP');
+    if (typeof window.sendFirebaseOTP !== 'function') {
+      throw new Error('Firebase Phone Auth is not initialized.');
     }
-
-    app.otpSession = {
-      provider: data.provider || 'local',
-      request_id: data.request_id || null,
-      prefix: data.prefix || null
-    };
+    await window.sendFirebaseOTP(firebasePhone);
+    document.getElementById('phoneInput').value = firebasePhone;
     document.getElementById('otpSection').style.display = 'block';
-    const otpHint = data.otp_preview ? ` OTP: ${data.otp_preview}` : '';
-    setPhoneAuthStatus(`OTP sent to ${data.phone}.${otpHint}`, 'success');
+    setPhoneAuthStatus(`OTP sent to ${firebasePhone}.`, 'success');
   } catch (err) {
-    const msg = (err && err.message) ? err.message : '';
-    if (msg.toLowerCase().includes('failed to fetch')) {
-      setPhoneAuthStatus('Unable to reach auth server. Check Render URL, CORS, and deployment status.', 'error');
-    } else {
-      setPhoneAuthStatus(msg || 'Unable to send OTP. Check backend deployment and Hubtel keys.', 'error');
-    }
+    setPhoneAuthStatus(err?.message || 'Unable to send OTP via Firebase.', 'error');
   }
 }
 
@@ -946,16 +954,18 @@ async function verifyPhoneOtp() {
   setPhoneAuthStatus('Verifying OTP...');
 
   try {
-    const endpoint = API_BASE ? `${API_BASE}/api/auth/verify-otp` : '/api/auth/verify-otp';
+    if (typeof window.verifyFirebaseOTP !== 'function') {
+      throw new Error('Firebase OTP verifier is not initialized.');
+    }
+    const firebaseResult = await window.verifyFirebaseOTP(otp);
+    const endpoint = API_BASE ? `${API_BASE}/api/auth/firebase-phone` : '/api/auth/firebase-phone';
     const res = await originalFetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        phone,
-        otp,
+        phone: firebaseResult.user.phoneNumber || normalizePhoneForFirebase(phone),
         name,
-        request_id: app.otpSession?.request_id || null,
-        prefix: app.otpSession?.prefix || null
+        firebase_uid: firebaseResult.user.uid
       })
     });
     const data = await res.json().catch(() => ({}));
@@ -1030,9 +1040,7 @@ window.fetch = async function(...args) {
   // If authorized request fails with 401, token is likely expired.
   if (
     res.status === 401 &&
-    !args[0].includes('/api/auth/login') &&
-    !args[0].includes('/api/auth/request-otp') &&
-    !args[0].includes('/api/auth/verify-otp')
+    !args[0].includes('/api/auth/login')
   ) {
     logout(false);
     throw new Error('Unauthorized (Session Expired)');
