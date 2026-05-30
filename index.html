@@ -11,90 +11,9 @@
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
 
- <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getAuth,
-    GoogleAuthProvider,
-    RecaptchaVerifier,
-    signInWithPopup,
-    signInWithPhoneNumber
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCwGFWUeGeAnVew0MawvtYjLqQrKDhLcXE",
-    authDomain: "scanty-meals.firebaseapp.com",
-    projectId: "scanty-meals",
-    storageBucket: "scanty-meals.firebasestorage.app",
-    messagingSenderId: "441632174969",
-    appId: "1:441632174969:web:966b7f634f39af6294b5a8",
-    measurementId: "G-JNRPCRSD2M"
-  };
-
-  const firebaseApp = initializeApp(firebaseConfig);
-  const auth = getAuth(firebaseApp);
-
-  function ensureRecaptcha() {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        'recaptcha-container',
-        { size: 'normal' }
-      );
-    }
-    return window.recaptchaVerifier;
-  }
-
-  window.sendFirebaseOTP = async function (phoneNumber) {
-    const appVerifier = ensureRecaptcha();
-    const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-    window.confirmationResult = confirmationResult;
-    return { success: true };
-  };
-
-  window.verifyFirebaseOTP = async function (otpCode) {
-    if (!window.confirmationResult) {
-      throw new Error("OTP session not found. Please send OTP again.");
-    }
-    const result = await window.confirmationResult.confirm(otpCode);
-    return {
-      success: true,
-      user: {
-        uid: result.user.uid,
-        phoneNumber: result.user.phoneNumber || ""
-      }
-    };
-  };
-
-  window.signInWithGoogle = async function () {
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      const sessionRes = await fetch("/api/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: user.email,
-          name: user.displayName || "Google User",
-          firebase_uid: user.uid
-        })
-      });
-
-      const sessionData = await sessionRes.json();
-      if (!sessionRes.ok || !sessionData.success) {
-        throw new Error(sessionData.message || "Google session creation failed");
-      }
-
-      localStorage.setItem("token", sessionData.token);
-      localStorage.setItem("user", JSON.stringify(sessionData.user));
-      window.location.href = "/";
-    } catch (error) {
-      console.error(error);
-      alert(error.message);
-    }
-  };
+ <script>
+  // Phone OTP login removed (phone + name login uses /api/auth/phone-name).
+  // Google sign-in helper removed from this build as well.
  </script>
 
   <script>
@@ -427,22 +346,17 @@
   <div class="mt-6 w-16 h-1 bg-white rounded-full animate-pulse"></div>
 </div>
 
-<!-- PHONE OTP LOGIN -->
+<!-- PHONE + NAME LOGIN -->
 <div id="phoneAuthModal" class="modal-overlay" style="display:none; z-index: 1200;" onclick="if(event.target===this) return false;">
   <div class="modal-box p-6" onclick="event.stopPropagation()">
     <h2 class="font-display text-2xl font-bold text-primary mb-2">Login With Phone</h2>
-    <p id="phoneAuthMessage" class="text-sm text-gray-600 mb-5">Enter your phone number to receive OTP.</p>
+    <p id="phoneAuthMessage" class="text-sm text-gray-600 mb-5">Enter your phone number and name.</p>
 
     <input id="phoneInput" type="tel" placeholder="Phone Number (e.g. 024xxxxxxx)" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
-    <button onclick="requestPhoneOtp()" class="btn-primary w-full">Send OTP</button>
+    <input id="phoneNameInput" type="text" placeholder="Your Name (optional)" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
 
-    <div id="otpSection" style="display:none;" class="mt-4">
-      <input id="otpInput" type="text" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit OTP" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
-      <input id="phoneNameInput" type="text" placeholder="Your Name (optional)" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
-      <button onclick="verifyPhoneOtp()" class="btn-primary w-full">Confirm OTP</button>
-    </div>
+    <button onclick="loginWithPhoneName()" class="btn-primary w-full">Login</button>
 
-    <div id="recaptcha-container" class="mt-4"></div>
     <p id="phoneAuthStatus" class="text-sm mt-4 text-gray-600"></p>
   </div>
 </div>
@@ -883,28 +797,20 @@ function setPhoneAuthStatus(msg, type = 'info') {
   else el.style.color = '#666';
 }
 
-function showPhoneAuthModal(message = 'Enter your phone number to receive OTP.') {
+function showPhoneAuthModal(message = 'Enter your phone number and name.') {
   const modal = document.getElementById('phoneAuthModal');
   const msg = document.getElementById('phoneAuthMessage');
-  const otpSection = document.getElementById('otpSection');
-  const otpInput = document.getElementById('otpInput');
   if (modal) modal.style.display = 'flex';
   if (msg) msg.textContent = message;
-  if (otpSection) otpSection.style.display = 'none';
-  if (otpInput) otpInput.value = '';
-  window.confirmationResult = null;
   setPhoneAuthStatus('');
 }
 
-function normalizePhoneForFirebase(rawPhone) {
+function normalizePhoneForBackend(rawPhone) {
   const digits = (rawPhone || '').replace(/\D/g, '');
   if (!digits) return '';
-  if (digits.length === 10 && digits.startsWith('0')) {
-    return '+233' + digits.slice(1);
-  }
-  if (digits.startsWith('233')) {
-    return '+' + digits;
-  }
+  // Match backend normalize_phone: 0XXXXXXXXX => +233XXXXXXXXX
+  if (digits.length === 10 && digits.startsWith('0')) return '+233' + digits.slice(1);
+  if (digits.startsWith('233')) return '+' + digits;
   return '+' + digits;
 }
 
@@ -913,71 +819,43 @@ function hidePhoneAuthModal() {
   if (modal) modal.style.display = 'none';
 }
 
-async function requestPhoneOtp() {
-  const phone = document.getElementById('phoneInput').value.trim();
-  if (!phone) {
-    setPhoneAuthStatus('Enter your phone number first.', 'error');
+async function loginWithPhoneName() {
+  const phoneRaw = document.getElementById('phoneInput').value.trim();
+  const name = document.getElementById('phoneNameInput').value.trim();
+
+  if (!phoneRaw) {
+    setPhoneAuthStatus('Phone number is required.', 'error');
     return;
   }
 
-  const firebasePhone = normalizePhoneForFirebase(phone);
-  if (!firebasePhone.startsWith('+') || firebasePhone.length < 11) {
+  const phone = normalizePhoneForBackend(phoneRaw);
+  if (!phone || phone.length < 11) {
     setPhoneAuthStatus('Enter a valid phone number (e.g. 024xxxxxxx).', 'error');
     return;
   }
 
-  setPhoneAuthStatus('Sending OTP...');
+  setPhoneAuthStatus('Logging in...');
 
   try {
-    if (typeof window.sendFirebaseOTP !== 'function') {
-      throw new Error('Firebase Phone Auth is not initialized.');
-    }
-    await window.sendFirebaseOTP(firebasePhone);
-    document.getElementById('phoneInput').value = firebasePhone;
-    document.getElementById('otpSection').style.display = 'block';
-    setPhoneAuthStatus(`OTP sent to ${firebasePhone}.`, 'success');
-  } catch (err) {
-    setPhoneAuthStatus(err?.message || 'Unable to send OTP via Firebase.', 'error');
-  }
-}
-
-async function verifyPhoneOtp() {
-  const phone = document.getElementById('phoneInput').value.trim();
-  const otp = document.getElementById('otpInput').value.trim();
-  const name = document.getElementById('phoneNameInput').value.trim();
-
-  if (!phone || !otp) {
-    setPhoneAuthStatus('Enter phone and OTP to continue.', 'error');
-    return;
-  }
-
-  setPhoneAuthStatus('Verifying OTP...');
-
-  try {
-    if (typeof window.verifyFirebaseOTP !== 'function') {
-      throw new Error('Firebase OTP verifier is not initialized.');
-    }
-    const firebaseResult = await window.verifyFirebaseOTP(otp);
-    const endpoint = API_BASE ? `${API_BASE}/api/auth/firebase-phone` : '/api/auth/firebase-phone';
+    const endpoint = API_BASE ? `${API_BASE}/api/auth/phone-name` : '/api/auth/phone-name';
     const res = await originalFetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phone: firebaseResult.user.phoneNumber || normalizePhoneForFirebase(phone),
-        name,
-        firebase_uid: firebaseResult.user.uid
-      })
+      body: JSON.stringify({ phone, name })
     });
-    const data = await res.json().catch(() => ({}));
 
+    const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.success) {
-      throw new Error(data.message || 'OTP verification failed');
+      throw new Error(data.message || 'Login failed');
     }
+
+    // Store standardized phone for UI consistency
+    document.getElementById('phoneInput').value = phone;
 
     setPhoneAuthStatus('Login successful.', 'success');
     applySuccessfulLogin(data);
   } catch (err) {
-    setPhoneAuthStatus(err.message || 'Unable to verify OTP.', 'error');
+    setPhoneAuthStatus(err.message || 'Unable to login.', 'error');
   }
 }
 

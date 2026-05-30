@@ -1,0 +1,5 @@
+- [ ] app.py: add POST /api/auth/phone-name (phone + name, no OTP, no firebase_uid)
+- [ ] index.html: remove OTP/Firebase phone verification UI and JS (send/verify OTP, recaptcha container)
+- [ ] index.html: change login modal to phone + name single-step, call /api/auth/phone-name
+- [ ] index.html: adjust protected-page gating text to “Login with phone to continue” (no OTP mention)
+- [ ] Test: run server, verify login works and protected pages load after login

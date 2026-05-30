@@ -435,6 +435,39 @@ def google_login():
         }
     }), 200
 
+@app.route('/api/auth/phone-name', methods=['POST'])
+def phone_name_login():
+    """Login/register user with phone number + name (no OTP, no Firebase)."""
+    data = request.json or {}
+    phone = normalize_phone(data.get('phone'))
+    name = (data.get('name') or '').strip()
+
+    if not phone:
+        return jsonify({"success": False, "message": "Phone is required"}), 400
+
+    user = get_or_create_user_by_phone(phone, name)
+
+    # Ensure provider is recorded consistently (even for in-memory path).
+    if MONGODB_CONNECTED:
+        users_collection.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"provider": "phone_name"}}
+        )
+
+    token = create_jwt_token(user['_id'], user.get('email', ''), user.get('role', 'customer'))
+    return jsonify({
+        "success": True,
+        "token": token,
+        "user": {
+            "id": str(user['_id']),
+            "email": user.get('email', ''),
+            "name": user.get('name', f"Customer {phone[-4:]}"),
+            "role": user.get('role', 'customer'),
+            "phone": phone
+        }
+    }), 200
+
+
 @app.route('/api/auth/firebase-phone', methods=['POST'])
 def firebase_phone_login():
     """Create app session after Firebase phone verification on the client."""
