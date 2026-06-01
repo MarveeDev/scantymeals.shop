@@ -721,7 +721,9 @@
           </div>
 
           <input id="checkoutName" placeholder="Your Name *" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
-          <input id="checkoutPhone" placeholder="Phone Number *" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-primary">
+          <input id="checkoutPhone" placeholder="Phone Number *" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
+          <input id="checkoutLocation" placeholder="Delivery Location *" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-primary">
+          <p class="text-xs text-gray-500 mt-2">Adjust meal quantity using the + / - buttons above.</p>
 
           <button onclick="placeOrder()" id="placeOrderBtn" class="btn-primary w-full mt-4 py-3 rounded-lg">✓ Place Order</button>
         </div>
@@ -1003,8 +1005,8 @@ async function fetchOrders() {
   }
 }
 
-async function createOrder(name, phone) {
-  if (!name || !phone) return;
+async function createOrder(name, phone, location) {
+  if (!name || !phone || !location) return;
   
   const items = app.cart.map(i => ({ 
     name: i.name, 
@@ -1017,7 +1019,7 @@ async function createOrder(name, phone) {
     const res = await fetch('/api/orders', {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ customer_name: name, customer_phone: phone, items, total })
+      body: JSON.stringify({ customer_name: name, customer_phone: phone, customer_location: location, items, total })
     });
     const data = await res.json();
     if (data.success) {
@@ -1118,6 +1120,8 @@ function renderOrders() {
           <div>
             <p class="text-primary font-mono font-bold">${order.id}</p>
             <p class="font-semibold">${order.customer_name}</p>
+            <p class="text-sm text-gray-500">${order.customer_phone || ''}</p>
+            <p class="text-sm text-gray-500">${order.customer_location || ''}</p>
             <p class="text-sm text-gray-500">${new Date(order.timestamp).toLocaleDateString()} ${new Date(order.timestamp).toLocaleTimeString()}</p>
           </div>
           <div class="text-right">
@@ -1157,6 +1161,7 @@ function updateAdminTable() {
       <td class="px-6 py-4">
         <p class="font-semibold">${order.customer_name}</p>
         <p class="text-sm text-gray-500">${order.customer_phone}</p>
+        <p class="text-sm text-gray-500">${order.customer_location || ''}</p>
       </td>
       <td class="px-6 py-4">
         ${order.items.map(item => `<div class="text-sm">${item.quantity}× ${item.name}</div>`).join('')}
@@ -1327,13 +1332,15 @@ function toggleCart() {
 function placeOrder() {
   const name = document.getElementById('checkoutName').value;
   const phone = document.getElementById('checkoutPhone').value;
-  if (!name || !phone) {
-    alert('Please enter your name and phone number');
+  const location = document.getElementById('checkoutLocation').value;
+  if (!name || !phone || !location) {
+    alert('Please enter your name, phone number, and location');
     return;
   }
-  createOrder(name, phone);
+  createOrder(name, phone, location);
   document.getElementById('checkoutName').value = '';
   document.getElementById('checkoutPhone').value = '';
+  document.getElementById('checkoutLocation').value = '';
 }
 
 // ===== PAGE NAVIGATION =====
@@ -1441,4 +1448,5 @@ window.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
+
 

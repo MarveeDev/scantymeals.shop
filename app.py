@@ -605,6 +605,7 @@ def create_order():
         "id": f"SCM-{order_number:04d}",
         "customer_name": data.get("customer_name", "Guest"),
         "customer_phone": data.get("customer_phone", ""),
+        "customer_location": data.get("customer_location", ""),
         "items": data.get("items", []),
         "total": data.get("total", 0),
         "status": "Confirmed",
