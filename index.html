@@ -735,7 +735,7 @@
   <div id="successToast" style="display:none" class="fixed bottom-3 left-3 right-3 sm:left-auto sm:right-4 sm:bottom-4 bg-green-500 text-white px-4 sm:px-6 py-4 rounded-lg shadow-lg z-50 flex gap-3">
     <span class="text-2xl">✅</span>
     <div>
-      <p class="font-bold">Order Placed!</p>
+      <p class="font-bold">THANK YOU FOR ORDERING FROM SCANTY MEALS, OUR COUSTOMER OUR PROPERTY</p>
       <p class="text-sm" id="toastOrderId"></p>
     </div>
   </div>
@@ -1400,7 +1400,7 @@ function showToast(orderId) {
   const toast = document.getElementById('successToast');
   document.getElementById('toastOrderId').textContent = orderId + ' confirmed';
   toast.style.display = 'flex';
-  setTimeout(() => { toast.style.display = 'none'; }, 3000);
+  setTimeout(() => { toast.style.display = 'none'; }, 6000);
 }
 
 // ===== INIT =====
