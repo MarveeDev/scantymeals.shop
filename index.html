@@ -1025,12 +1025,18 @@ async function createOrder(name, phone, location) {
     if (data.success) {
       app.orders.unshift(data.order);
       app.cart = [];
+      updateCart();
       toggleCart();
       showToast(data.order.id);
       fetchOrders();
+      // Navigate to orders page after successful order placement
+      setTimeout(() => showPage('orders'), 500);
+    } else {
+      alert(data.message || 'Failed to place order');
     }
   } catch (err) {
     console.error('Error creating order:', err);
+    alert('Error placing order. Please try again.');
   }
 }
 
