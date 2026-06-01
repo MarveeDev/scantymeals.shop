@@ -536,6 +536,22 @@ def index():
 def serve_img(filename):
     return send_from_directory('IMG', filename)
 
+@app.route('/favicon.ico')
+def favicon_file():
+    return send_from_directory('IMG', 'web logo.jpeg', mimetype='image/jpeg')
+
+@app.route('/site.webmanifest')
+def webmanifest_file():
+    return send_from_directory('.', 'site.webmanifest', mimetype='application/manifest+json')
+
+@app.route('/robots.txt')
+def robots_file():
+    return send_from_directory('.', 'robots.txt', mimetype='text/plain')
+
+@app.route('/sitemap.xml')
+def sitemap_file():
+    return send_from_directory('.', 'sitemap.xml', mimetype='application/xml')
+
 @app.route('/meals.json')
 def meals_file():
     return send_from_directory('.', 'meals.json')

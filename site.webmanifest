@@ -1,0 +1,14 @@
+{
+  "name": "Scanty Meals",
+  "short_name": "Scanty",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9f9f9",
+  "theme_color": "#FF6B35",
+  "icons": [
+    {
+      "src": "/IMG/web%20logo.jpeg",
+      "type": "image/jpeg"
+    }
+  ]
+}
