@@ -897,7 +897,8 @@ window.fetch = async function(...args) {
   // If authorized request fails with 401, token is likely expired.
   if (
     res.status === 401 &&
-    !args[0].includes('/api/auth/login')
+    !args[0].includes('/api/auth/login') &&
+    !args[0].includes('/api/orders')
   ) {
     logout(false);
     throw new Error('Unauthorized (Session Expired)');
@@ -920,9 +921,15 @@ async function fetchMenu() {
   // Use originalFetch so a 401 for /api/menu doesn't trigger the global logout handler.
   try {
     const menuUrl = API_BASE ? `${API_BASE}/api/menu` : '/api/menu';
-    const res = await originalFetch(menuUrl, {
+    let res = await originalFetch(menuUrl, {
       headers: getHeaders()
     });
+
+    // If our token is invalid, clear it and retry once as guest so the UI can still load.
+    if (res.status === 401) {
+      try { logout(false); } catch (_) {}
+      res = await originalFetch(menuUrl, { headers: { 'Content-Type': 'application/json' } });
+    }
 
     if (res.ok) {
       const data = await res.json();
@@ -991,9 +998,15 @@ async function fetchMenu() {
 
 async function fetchOrders() {
   try {
-    const res = await fetch('/api/orders', {
+    let res = await fetch('/api/orders', {
       headers: getHeaders()
     });
+
+    if (res.status === 401) {
+      try { logout(false); } catch (_) {}
+      res = await fetch('/api/orders', { headers: { 'Content-Type': 'application/json' } });
+    }
+
     const data = await res.json();
     if (data.success) {
       app.orders = data.orders;
@@ -1006,7 +1019,9 @@ async function fetchOrders() {
 }
 
 async function createOrder(name, phone, location) {
-  if (!name || !phone || !location) return;
+  if (!name || !phone) return;
+  // Location is optional now (login UI removed; backend accepts empty location)
+  location = (location || '').trim();
   
   const items = app.cart.map(i => ({ 
     name: i.name, 
@@ -1016,23 +1031,65 @@ async function createOrder(name, phone, location) {
   const total = cartTotal();
   
   try {
-    const res = await fetch('/api/orders', {
+    const url = API_BASE ? `${API_BASE}/api/orders` : '/api/orders';
+    const payload = { customer_name: name, customer_phone: phone, customer_location: location, items, total };
+    // Try with current auth (if any). If server responds indicating a missing/invalid
+    // token, clear auth and retry once as a guest, and avoid showing the raw
+    // token-related server message to the user.
+    let res = await originalFetch(url, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ customer_name: name, customer_phone: phone, customer_location: location, items, total })
+      body: JSON.stringify(payload)
     });
-    const data = await res.json();
-    if (data.success) {
-      app.orders.unshift(data.order);
+
+    // Helper to safely parse JSON
+    const safeJson = async (r) => {
+      try { return await r.json(); } catch (e) { return {}; }
+    };
+
+    // Temporary logs for debugging server responses when creating orders
+    try {
+      const raw = await res.clone().text();
+      console.log('createOrder initial status:', res.status, 'url:', url);
+      console.log('createOrder initial raw response:', raw);
+    } catch (logErr) {
+      console.error('createOrder logging failed:', logErr);
+    }
+
+    let data = await safeJson(res);
+
+    // If the server returns 401 for creating an order, the backend requires
+    // authentication for placing orders. Clear stored auth and inform the user
+    // instead of retrying as guest (which the server rejects).
+    if (res.status === 401) {
+      try { logout(false); } catch (_) {}
+      alert('Session expired — please log in to place orders. Your cart is preserved.');
+      return;
+    }
+
+    // Determine success: accept explicit { success:true } OR HTTP OK OR an order object returned.
+    const orderObj = (data && data.order) ? data.order : (data && data.id ? data : null);
+    const success = Boolean((data && data.success) || res.ok || orderObj);
+
+    if (success) {
+      const placed = orderObj || (data && data.order) || data;
+      // Normalize placed order shape
+      const orderToInsert = placed && placed.id ? placed : null;
+      if (orderToInsert) {
+        app.orders.unshift(orderToInsert);
+      }
       app.cart = [];
       updateCart();
       toggleCart();
-      showToast(data.order.id);
+      // Prefer to show the returned order id when available
+      try { showToast((orderToInsert && orderToInsert.id) || (data && data.order && data.order.id) || ''); } catch (_) {}
       fetchOrders();
+      // Refresh analytics so the newly placed order is reflected immediately
+      try { loadAnalytics(); } catch (_) {}
       // Navigate to orders page after successful order placement
       setTimeout(() => showPage('orders'), 500);
     } else {
-      alert(data.message || 'Failed to place order');
+      alert((data && data.message) || 'Failed to place order');
     }
   } catch (err) {
     console.error('Error creating order:', err);
@@ -1059,9 +1116,13 @@ async function updateOrderStatus(orderId, status) {
 async function fetchAnalytics(date) {
   try {
     const params = date ? `?date=${date}` : '';
-    const res = await fetch(`/api/analytics/daily${params}`, {
+    let res = await fetch(`/api/analytics/daily${params}`, {
       headers: getHeaders()
     });
+    if (res.status === 401) {
+      try { logout(false); } catch (_) {}
+      res = await fetch(`/api/analytics/daily${params}`, { headers: { 'Content-Type': 'application/json' } });
+    }
     const data = await res.json();
     return data.success ? data : { total_revenue: 0, total_orders: 0, food_sold: {}, orders: [] };
   } catch (err) {
@@ -1072,9 +1133,13 @@ async function fetchAnalytics(date) {
 
 async function fetchSummary() {
   try {
-    const res = await fetch('/api/analytics/summary', {
+    let res = await fetch('/api/analytics/summary', {
       headers: getHeaders()
     });
+    if (res.status === 401) {
+      try { logout(false); } catch (_) {}
+      res = await fetch('/api/analytics/summary', { headers: { 'Content-Type': 'application/json' } });
+    }
     const data = await res.json();
     return data.success ? data : { total_revenue: 0, total_orders: 0, food_sold: {} };
   } catch (err) {
@@ -1338,9 +1403,11 @@ function toggleCart() {
 function placeOrder() {
   const name = document.getElementById('checkoutName').value;
   const phone = document.getElementById('checkoutPhone').value;
-  const location = document.getElementById('checkoutLocation').value;
-  if (!name || !phone || !location) {
-    alert('Please enter your name, phone number, and location');
+  const locationEl = document.getElementById('checkoutLocation');
+  const location = locationEl ? locationEl.value : '';
+
+  if (!name || !phone) {
+    alert('Please enter your name and phone number');
     return;
   }
   createOrder(name, phone, location);

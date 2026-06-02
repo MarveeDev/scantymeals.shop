@@ -45,7 +45,7 @@
     "name": "Roasted Chicken Leg",
     "price": 35,
     "category": "Protein",
-    "image": "/IMG/roasted%20chichen%20leg.jpg",
+    "image": "/IMG/roasted%20chicken%20leg.jpg",
     "available": true
   },
   {
@@ -56,7 +56,7 @@
     "available": true
   },
   {
-    "name": "Spicy Jollof Rice",
+    "name": "Assorted Spaghetti",
     "price": 40,
     "category": "Spicy",
     "image": "/IMG/menu_2.jpg",
