@@ -584,7 +584,7 @@ def get_menu():
     return jsonify({"success": True, "items": MENU_ITEMS})
 
 @app.route('/api/orders', methods=['POST'])
-@token_required
+
 def create_order():
     data = request.json
     
@@ -622,7 +622,7 @@ def create_order():
     return jsonify({"success": True, "order": order}), 201
 
 @app.route('/api/orders', methods=['GET'])
-@token_required
+
 def get_orders():
     date_filter = request.args.get('date')
     
