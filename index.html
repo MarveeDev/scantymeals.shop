@@ -1040,9 +1040,10 @@ async function createOrder(name, phone, location) {
     // Try with current auth (if any). If server responds indicating a missing/invalid
     // token, clear auth and retry once as a guest, and avoid showing the raw
     // token-related server message to the user.
+    // Send order POST without Authorization header to avoid token-related 401s
     let res = await originalFetch(url, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
