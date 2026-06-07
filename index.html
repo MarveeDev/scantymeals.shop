@@ -726,7 +726,7 @@
 
           <input id="checkoutName" placeholder="Your Name *" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
           <input id="checkoutPhone" placeholder="Phone Number *" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:outline-none focus:border-primary">
-          <input id="checkoutLocation" placeholder="Delivery Location *" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-primary">
+          <input id="checkoutLocation" placeholder="Delivery Location (optional)" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-primary">
           <p class="text-xs text-gray-500 mt-2">Adjust meal quantity using the + / - buttons above.</p>
 
           <button onclick="placeOrder()" id="placeOrderBtn" class="btn-primary w-full mt-4 py-3 rounded-lg">✓ Place Order</button>
@@ -1023,7 +1023,7 @@ async function fetchOrders() {
 }
 
 async function createOrder(name, phone, location) {
-  if (!name || !phone) return;
+  if (!name || !phone) return false;
   // Location is optional now (login UI removed; backend accepts empty location)
   location = (location || '').trim();
   
@@ -1070,13 +1070,12 @@ async function createOrder(name, phone, location) {
 
     let data = await safeJson(res);
 
-    // If the server returns 401 for creating an order, the backend requires
-    // authentication for placing orders. Clear stored auth and inform the user
-    // instead of retrying as guest (which the server rejects).
+    // If the server returns 401 for creating an order, inform the user
+    // and do not clear the cart/form so they can retry after re-authenticating.
     if (res.status === 401) {
       try { logout(false); } catch (_) {}
       alert('Session expired — please log in to place orders. Your cart is preserved.');
-      return;
+      return false;
     }
 
     // Determine success: accept explicit { success:true } OR HTTP OK OR an order object returned.
@@ -1090,6 +1089,7 @@ async function createOrder(name, phone, location) {
       if (orderToInsert) {
         app.orders.unshift(orderToInsert);
       }
+      // Clear cart only after a confirmed success
       app.cart = [];
       updateCart();
       toggleCart();
@@ -1100,12 +1100,15 @@ async function createOrder(name, phone, location) {
       try { loadAnalytics(); } catch (_) {}
       // Navigate to orders page after successful order placement
       setTimeout(() => showPage('orders'), 500);
+      return true;
     } else {
       alert((data && data.message) || 'Failed to place order');
+      return false;
     }
   } catch (err) {
     console.error('Error creating order:', err);
     alert('Error placing order. Please try again.');
+    return false;
   }
 }
 
@@ -1412,7 +1415,7 @@ function toggleCart() {
   modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
 }
 
-function placeOrder() {
+async function placeOrder() {
   const name = document.getElementById('checkoutName').value;
   const phone = document.getElementById('checkoutPhone').value;
   const locationEl = document.getElementById('checkoutLocation');
@@ -1422,10 +1425,13 @@ function placeOrder() {
     alert('Please enter your name and phone number');
     return;
   }
-  createOrder(name, phone, location);
-  document.getElementById('checkoutName').value = '';
-  document.getElementById('checkoutPhone').value = '';
-  document.getElementById('checkoutLocation').value = '';
+
+  const ok = await createOrder(name, phone, location);
+  if (ok) {
+    document.getElementById('checkoutName').value = '';
+    document.getElementById('checkoutPhone').value = '';
+    document.getElementById('checkoutLocation').value = '';
+  }
 }
 
 // ===== PAGE NAVIGATION =====

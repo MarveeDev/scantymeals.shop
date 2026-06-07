@@ -543,8 +543,10 @@ def get_menu():
 @app.route('/api/orders', methods=['POST'])
 
 def create_order():
-    data = request.json
-    
+    print("CREATE_ORDER ROUTE HIT")
+    # Parse JSON safely
+    data = request.get_json(silent=True) or {}
+
     if MONGODB_CONNECTED:
         # Get next order counter from MongoDB
         counter_doc = order_counter_collection.find_one_and_update(
@@ -557,7 +559,7 @@ def create_order():
     else:
         order_number = order_counter[0]
         order_counter[0] += 1
-    
+
     # Normalize accepted field names (camelCase or snake_case)
     customer_name = data.get('customer_name') or data.get('customerName') or 'Guest'
     customer_phone = data.get('customer_phone') or data.get('phone_number') or data.get('phoneNumber') or data.get('customerPhone') or ''
@@ -581,16 +583,16 @@ def create_order():
         try:
             result = orders_collection.insert_one(order)
             order["_id"] = str(result.inserted_id)
-            print(f"Order saved to MongoDB with _id={order['_id']}")
+            app.logger.info(f"Order saved to MongoDB with _id={order['_id']}")
         except Exception as e:
-            print(f"Error inserting order into MongoDB: {e}")
+            app.logger.exception("Error inserting order into MongoDB")
             return jsonify({"success": False, "message": "Failed to save order"}), 500
     else:
         orders_db.append(order)
-        print(f"Order saved to in-memory store with id={order['id']}")
+        app.logger.info(f"Order saved to in-memory store with id={order['id']}")
 
-    # Return a clear success message for the frontend
-    return jsonify({"success": True, "message": "Order placed successfully", "order": order}), 201
+    # Return the requested success response (do not require authentication here)
+    return jsonify({"success": True, "message": "Order placed successfully"}), 201
 
 @app.route('/api/orders', methods=['GET'])
 
