@@ -1036,7 +1036,14 @@ async function createOrder(name, phone, location) {
   
   try {
     const url = API_BASE ? `${API_BASE}/api/orders` : '/api/orders';
-    const payload = { customer_name: name, customer_phone: phone, customer_location: location, items, total };
+    // Send payload using the expected camelCase field names so backend accepts it
+    const payload = {
+      customerName: name,
+      phoneNumber: phone,
+      deliveryLocation: location,
+      cartItems: items,
+      total: total
+    };
     // Try with current auth (if any). If server responds indicating a missing/invalid
     // token, clear auth and retry once as a guest, and avoid showing the raw
     // token-related server message to the user.

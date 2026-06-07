@@ -210,11 +210,11 @@ def token_required(f):
 def admin_required(f):
     """Decorator for routes that require admin role"""
     @wraps(f)
+    @token_required
     def decorated(*args, **kwargs):
-        # With authentication removed, do not enforce admin checks.
-        # If a previous middleware set a user, keep it; otherwise default to admin-like access.
-        if not hasattr(request, 'user'):
-            request.user = { 'user_id': 'anonymous', 'email': '', 'role': 'admin' }
+        # Enforce admin access for protected routes
+        if not getattr(request, 'user', None) or request.user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required"}), 403
         return f(*args, **kwargs)
 
     return decorated
@@ -558,26 +558,37 @@ def create_order():
         order_number = order_counter[0]
         order_counter[0] += 1
     
+    # Normalize accepted field names (camelCase or snake_case)
+    customer_name = data.get('customer_name') or data.get('customerName') or 'Guest'
+    customer_phone = data.get('customer_phone') or data.get('phone_number') or data.get('phoneNumber') or data.get('customerPhone') or ''
+    customer_location = data.get('customer_location') or data.get('delivery_location') or data.get('deliveryLocation') or data.get('customerLocation') or ''
+    items = data.get('items') or data.get('cartItems') or []
+    total = data.get('total') or data.get('amount') or 0
+
     order = {
         "id": f"SCM-{order_number:04d}",
-        "customer_name": data.get("customer_name", "Guest"),
-        "customer_phone": data.get("customer_phone", ""),
-        "customer_location": data.get("customer_location", ""),
-        "items": data.get("items", []),
-        "total": data.get("total", 0),
+        "customer_name": customer_name,
+        "customer_phone": customer_phone,
+        "customer_location": customer_location,
+        "items": items,
+        "total": total,
         "status": "Confirmed",
         "timestamp": datetime.now().isoformat(),
         "date": date.today().isoformat()
     }
-    
+
     if MONGODB_CONNECTED:
-        result = orders_collection.insert_one(order)
-        order["_id"] = str(result.inserted_id)
-        print(f"Order saved to MongoDB with _id={order['_id']}")
+        try:
+            result = orders_collection.insert_one(order)
+            order["_id"] = str(result.inserted_id)
+            print(f"Order saved to MongoDB with _id={order['_id']}")
+        except Exception as e:
+            print(f"Error inserting order into MongoDB: {e}")
+            return jsonify({"success": False, "message": "Failed to save order"}), 500
     else:
         orders_db.append(order)
         print(f"Order saved to in-memory store with id={order['id']}")
-    
+
     # Return a clear success message for the frontend
     return jsonify({"success": True, "message": "Order placed successfully", "order": order}), 201
 
