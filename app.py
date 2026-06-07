@@ -71,7 +71,8 @@ try:
     mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
     # Test connection
     mongo_client.admin.command('ping')
-    db = mongo_client['scanty_pro']
+    # Use the 'scantymeals' database in MongoDB Atlas as requested
+    db = mongo_client['scantymeals']
     orders_collection = db['orders']
     order_counter_collection = db['counters']
     users_collection = db['users']
@@ -191,16 +192,17 @@ def token_required(f):
             try:
                 token = auth_header.split(" ")[1]
             except IndexError:
-                return jsonify({"success": False, "message": "Invalid token format"}), 401
-        
-        if not token:
-            return jsonify({"success": False, "message": "Token is missing"}), 401
-        
-        payload = verify_jwt_token(token)
-        if not payload:
-            return jsonify({"success": False, "message": "Invalid or expired token"}), 401
-        
-        request.user = payload
+                # Invalid token format — treat as anonymous rather than failing
+                token = None
+        # If no token provided or verification fails, treat the request as anonymous.
+        if token:
+            payload = verify_jwt_token(token)
+            if payload:
+                request.user = payload
+                return f(*args, **kwargs)
+
+        # Anonymous fallback: set a harmless guest user object so handlers can continue.
+        request.user = { 'user_id': 'anonymous', 'email': '', 'role': 'customer' }
         return f(*args, **kwargs)
     
     return decorated
@@ -208,12 +210,13 @@ def token_required(f):
 def admin_required(f):
     """Decorator for routes that require admin role"""
     @wraps(f)
-    @token_required
     def decorated(*args, **kwargs):
-        if request.user.get('role') != 'admin':
-            return jsonify({"success": False, "message": "Admin access required"}), 403
+        # With authentication removed, do not enforce admin checks.
+        # If a previous middleware set a user, keep it; otherwise default to admin-like access.
+        if not hasattr(request, 'user'):
+            request.user = { 'user_id': 'anonymous', 'email': '', 'role': 'admin' }
         return f(*args, **kwargs)
-    
+
     return decorated
 
 def normalize_phone(phone_raw):
@@ -284,54 +287,8 @@ def get_or_create_user_by_phone(phone, name=''):
 
 @app.route('/api/auth/register', methods=['POST'])
 def register():
-    """Register a new user"""
-    data = request.json
-    email = data.get('email')
-    password = data.get('password')
-    name = data.get('name')
-    role = data.get('role', 'customer')  # default role is customer
-    
-    if not email or not password or not name:
-        return jsonify({"success": False, "message": "Email, password, and name are required"}), 400
-    
-    if MONGODB_CONNECTED:
-        # Check if user already exists
-        existing_user = users_collection.find_one({"email": email})
-        if existing_user:
-            return jsonify({"success": False, "message": "Email already registered"}), 400
-        
-        # Create new user
-        new_user = {
-            "email": email,
-            "password": hash_password(password),
-            "name": name,
-            "role": role,
-            "created_at": datetime.now().isoformat()
-        }
-        result = users_collection.insert_one(new_user)
-        user_id = str(result.inserted_id)
-    else:
-        # Fallback to in-memory
-        existing_user = next((u for u in users_db if u["email"] == email), None)
-        if existing_user:
-            return jsonify({"success": False, "message": "Email already registered"}), 400
-        
-        new_user = {
-            "_id": f"usr_{len(users_db) + 1}",
-            "email": email,
-            "password": hash_password(password),
-            "name": name,
-            "role": role,
-            "created_at": datetime.now().isoformat()
-        }
-        users_db.append(new_user)
-        user_id = new_user["_id"]
-
-    return jsonify({
-        "success": True,
-        "message": "User registered successfully",
-        "user_id": user_id
-    }), 201
+    """Registration disabled by administrator."""
+    return jsonify({"success": False, "message": "Registration is disabled"}), 403
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
@@ -616,10 +573,13 @@ def create_order():
     if MONGODB_CONNECTED:
         result = orders_collection.insert_one(order)
         order["_id"] = str(result.inserted_id)
+        print(f"Order saved to MongoDB with _id={order['_id']}")
     else:
         orders_db.append(order)
+        print(f"Order saved to in-memory store with id={order['id']}")
     
-    return jsonify({"success": True, "order": order}), 201
+    # Return a clear success message for the frontend
+    return jsonify({"success": True, "message": "Order placed successfully", "order": order}), 201
 
 @app.route('/api/orders', methods=['GET'])
 
@@ -641,6 +601,65 @@ def get_orders():
             orders = orders_db
     
     return jsonify({"success": True, "orders": orders})
+
+
+@app.route('/api/orders/<order_id>/response', methods=['POST'])
+def add_order_response(order_id):
+    """Add a customer response/message to an order."""
+    data = request.json or {}
+    customer_name = data.get('customer_name', '').strip()
+    customer_phone = data.get('customer_phone', '').strip()
+    message = (data.get('message') or '').strip()
+
+    if not message:
+        return jsonify({"success": False, "message": "Message is required"}), 400
+
+    response_obj = {
+        'id': str(ObjectId()) if MONGODB_CONNECTED else f"resp_{int(datetime.utcnow().timestamp())}",
+        'customer_name': customer_name,
+        'customer_phone': customer_phone,
+        'message': message,
+        'timestamp': datetime.utcnow().isoformat()
+    }
+
+    if MONGODB_CONNECTED:
+        result = orders_collection.find_one_and_update(
+            { 'id': order_id },
+            { '$push': { 'responses': response_obj } },
+            return_document=ReturnDocument.AFTER
+        )
+        if not result:
+            return jsonify({"success": False, "message": "Order not found"}), 404
+        # Convert ObjectId to string if present
+        result['_id'] = str(result['_id'])
+        return jsonify({"success": True, "order": result, "response": response_obj}), 201
+
+    # In-memory path
+    for order in orders_db:
+        if order.get('id') == order_id:
+            if 'responses' not in order:
+                order['responses'] = []
+            order['responses'].append(response_obj)
+            return jsonify({"success": True, "order": order, "response": response_obj}), 201
+
+    return jsonify({"success": False, "message": "Order not found"}), 404
+
+
+@app.route('/api/orders/<order_id>/responses', methods=['GET'])
+def list_order_responses(order_id):
+    """Return customer responses attached to an order."""
+    if MONGODB_CONNECTED:
+        order = orders_collection.find_one({ 'id': order_id })
+        if not order:
+            return jsonify({"success": False, "message": "Order not found"}), 404
+        responses = order.get('responses', [])
+        return jsonify({"success": True, "responses": responses})
+
+    for order in orders_db:
+        if order.get('id') == order_id:
+            return jsonify({"success": True, "responses": order.get('responses', [])})
+
+    return jsonify({"success": False, "message": "Order not found"}), 404
 
 @app.route('/api/orders/<order_id>/status', methods=['PUT'])
 @admin_required
