@@ -28,10 +28,18 @@
 
   <script>
     const token = localStorage.getItem('token');
+    
+    // If no token, redirect to login
+    if (!token) {
+      console.warn('DEBUG: No admin token found. Redirecting to login...');
+      window.location.href = '/admin-login';
+    }
+    
     const headers = token ? { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } : { 'Content-Type': 'application/json' };
 
     async function fetchSummary() {
       try {
+        console.log('DEBUG: Fetching summary', { url: '/api/analytics/summary', authPresent: !!token });
         const res = await fetch('/api/analytics/summary', { headers });
         if (!res.ok) throw new Error('Unauthorized');
         return await res.json();
@@ -40,6 +48,7 @@
 
     async function fetchOrders() {
       try {
+        console.log('DEBUG: Fetching orders', { url: '/api/orders', authPresent: !!token });
         const res = await fetch('/api/orders', { headers });
         if (!res.ok) throw new Error('Unauthorized');
         return await res.json();
@@ -58,6 +67,7 @@
 
     async function updateStatus(id, status) {
       try {
+        console.log('DEBUG: Updating order status', { url: `/api/orders/${id}/status`, method: 'PUT', id, status, authPresent: !!token });
         const res = await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers, body: JSON.stringify({ status }) });
         if (!res.ok) throw new Error('Update failed');
         const data = await res.json();

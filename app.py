@@ -194,14 +194,21 @@ def token_required(f):
             except IndexError:
                 # Invalid token format — treat as anonymous rather than failing
                 token = None
-        # If no token provided or verification fails, treat the request as anonymous.
-        if token:
-            payload = verify_jwt_token(token)
-            if payload:
-                request.user = payload
-                return f(*args, **kwargs)
-
+            
+            if token:
+                print(f"TOKEN_REQUIRED: Token found in Authorization header (length: {len(token)})")
+                payload = verify_jwt_token(token)
+                if payload:
+                    print(f"TOKEN_REQUIRED: Token verified successfully. Payload: {payload}")
+                    request.user = payload
+                    return f(*args, **kwargs)
+                else:
+                    print(f"TOKEN_REQUIRED: Token verification FAILED")
+        else:
+            print(f"TOKEN_REQUIRED: No Authorization header present")
+        
         # Anonymous fallback: set a harmless guest user object so handlers can continue.
+        print(f"TOKEN_REQUIRED: Setting user as anonymous")
         request.user = { 'user_id': 'anonymous', 'email': '', 'role': 'customer' }
         return f(*args, **kwargs)
     
@@ -212,21 +219,23 @@ def admin_required(f):
     @wraps(f)
     @token_required
     def decorated(*args, **kwargs):
-        # Debug: log admin checks
-        try:
-            print("ADMIN_REQUIRED CHECK", getattr(request, 'user', None))
-        except Exception:
-            pass
-
+        user = getattr(request, 'user', None)
+        print(f"ADMIN_REQUIRED CHECK: user = {user}")
+        
         # Enforce admin access for protected routes
-        if not getattr(request, 'user', None) or request.user.get('role') != 'admin':
+        if not user or user.get('role') != 'admin':
+            print(f"ADMIN_REQUIRED FAILED: user is None={not user}, role is admin={user.get('role') if user else 'N/A'}")
             accept = request.headers.get('Accept', '')
             # If the client likely expects HTML, redirect to admin login page
             if 'text/html' in accept or request.path.startswith('/admin'):
+                print(f"ADMIN_REQUIRED: Redirecting to /admin-login (Accept header or /admin path)")
                 resp = redirect('/admin-login')
                 resp.headers['X-Robots-Tag'] = 'noindex, nofollow'
                 return resp
+            print(f"ADMIN_REQUIRED: Returning 403 JSON (API request, not HTML). Accept header: {accept}")
             return jsonify({"success": False, "message": "Admin access required"}), 403
+        
+        print(f"ADMIN_REQUIRED: Access granted for admin user {user.get('user_id')}")
         return f(*args, **kwargs)
 
     return decorated
@@ -755,6 +764,7 @@ def update_order_status(order_id):
 @app.route('/api/analytics/daily', methods=['GET'])
 @admin_required
 def daily_analytics():
+    print("ANALYTICS/DAILY: Route handler called")
     today = date.today().isoformat()
     date_filter = request.args.get('date', today)
     
@@ -788,6 +798,7 @@ def daily_analytics():
 @app.route('/api/analytics/summary', methods=['GET'])
 @admin_required
 def analytics_summary():
+    print("ANALYTICS/SUMMARY: Route handler called")
     if MONGODB_CONNECTED:
         all_orders = list(orders_collection.find({}))
     else:
@@ -802,6 +813,7 @@ def analytics_summary():
             qty = item['quantity']
             food_sold[name] = food_sold.get(name, 0) + qty
 
+    print(f"ANALYTICS/SUMMARY: Returning {total_orders} orders, ₵{total_revenue}")
     return jsonify({
         "success": True,
         "total_revenue": total_revenue,

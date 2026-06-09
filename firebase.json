@@ -18,6 +18,18 @@
     ],
     "rewrites": [
       {
+        "source": "/admin",
+        "destination": "/admin.html"
+      },
+      {
+        "source": "/admin/**",
+        "destination": "/admin.html"
+      },
+      {
+        "source": "/api/**",
+        "destination": "https://scanty-pro-app.onrender.com/api/"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
