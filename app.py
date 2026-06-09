@@ -1,6 +1,6 @@
 
 import flask
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, redirect, make_response
 from flask_cors import CORS
 from datetime import datetime, date, timedelta
 from pymongo import MongoClient
@@ -214,6 +214,12 @@ def admin_required(f):
     def decorated(*args, **kwargs):
         # Enforce admin access for protected routes
         if not getattr(request, 'user', None) or request.user.get('role') != 'admin':
+            accept = request.headers.get('Accept', '')
+            # If the client likely expects HTML, redirect to admin login page
+            if 'text/html' in accept or request.path.startswith('/admin'):
+                resp = redirect('/admin-login')
+                resp.headers['X-Robots-Tag'] = 'noindex, nofollow'
+                return resp
             return jsonify({"success": False, "message": "Admin access required"}), 403
         return f(*args, **kwargs)
 
@@ -508,6 +514,46 @@ def robots_file():
 @app.route('/sitemap.xml')
 def sitemap_file():
     return send_from_directory('.', 'sitemap.xml', mimetype='application/xml')
+
+
+@app.route('/admin')
+@token_required
+def admin_page():
+    # Only allow admin users to access the admin dashboard
+    if not getattr(request, 'user', None) or request.user.get('role') != 'admin':
+        return redirect('/admin-login')
+
+    try:
+        idx_path = os.path.join(app.root_path, 'index.html')
+        with open(idx_path, 'r', encoding='utf-8') as f:
+            html = f.read()
+        # Inject noindex meta into head for admin page responses
+        if '<meta name="robots"' not in html:
+            html = html.replace('</head>', '  <meta name="robots" content="noindex,nofollow">\n</head>')
+        resp = make_response(html)
+        resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+        resp.headers['X-Robots-Tag'] = 'noindex, nofollow'
+        return resp
+    except Exception as e:
+        app.logger.exception('Failed to render admin page')
+        return send_from_directory('.', 'index.html')
+
+
+@app.route('/admin-login')
+def admin_login_page():
+    # Public login page for admins (client-side will show login form)
+    try:
+        idx_path = os.path.join(app.root_path, 'index.html')
+        with open(idx_path, 'r', encoding='utf-8') as f:
+            html = f.read()
+        if '<meta name="robots"' not in html:
+            html = html.replace('</head>', '  <meta name="robots" content="noindex,nofollow">\n</head>')
+        resp = make_response(html)
+        resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+        resp.headers['X-Robots-Tag'] = 'noindex, nofollow'
+        return resp
+    except Exception:
+        return send_from_directory('.', 'index.html')
 
 @app.route('/meals.json')
 def meals_file():

@@ -1,4 +1,6 @@
 User-agent: *
-Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /orders
 
 Sitemap: https://scantymeals.shop/sitemap.xml
