@@ -1455,8 +1455,9 @@ function goToPage(pageId, event, closeMobile = false) {
 }
 
 function showPage(pageId) {
-  // Protect admin pages: only allow authenticated admin users
-  if ((pageId === 'admin' || pageId === 'analytics' || pageId === 'orders') && (!app.user || app.user.role !== 'admin')) {
+  // Customer-facing pages must remain accessible publicly.
+  // Only analytics + admin dashboard are admin-only.
+  if ((pageId === 'admin' || pageId === 'analytics') && (!app.user || app.user.role !== 'admin')) {
     alert('Admin access required. Please login as an admin.');
     return false;
   }
