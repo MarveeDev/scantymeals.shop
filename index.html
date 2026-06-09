@@ -1455,9 +1455,9 @@ function goToPage(pageId, event, closeMobile = false) {
 }
 
 function showPage(pageId) {
-  // Login UI removed; block admin navigation for non-admin users.
-  if (pageId === 'admin' && (!app.user || app.user.role !== 'admin')) {
-    alert('Admin access required');
+  // Protect admin pages: only allow authenticated admin users
+  if ((pageId === 'admin' || pageId === 'analytics' || pageId === 'orders') && (!app.user || app.user.role !== 'admin')) {
+    alert('Admin access required. Please login as an admin.');
     return false;
   }
 
