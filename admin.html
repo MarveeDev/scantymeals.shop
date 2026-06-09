@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>ScantyMeals Admin</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;padding:20px}
+    .stat{display:inline-block;padding:10px 16px;margin:8px;background:#f5f5f5;border-radius:6px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border:1px solid #ddd;text-align:left}
+  </style>
+</head>
+<body>
+  <h1>ScantyMeals — Admin Dashboard</h1>
+  <div id="stats">
+    <div class="stat">Total Orders: <span id="totalOrders">-</span></div>
+    <div class="stat">Today's Orders: <span id="todayOrders">-</span></div>
+    <div class="stat">Revenue: <span id="revenue">-</span></div>
+  </div>
+
+  <h2>Orders</h2>
+  <div id="ordersContainer">Loading...</div>
+
+  <h2>Customers</h2>
+  <div id="customers">Loading...</div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const headers = token ? { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } : { 'Content-Type': 'application/json' };
+
+    async function fetchSummary() {
+      try {
+        const res = await fetch('/api/analytics/summary', { headers });
+        if (!res.ok) throw new Error('Unauthorized');
+        return await res.json();
+      } catch (e) { console.error(e); return null; }
+    }
+
+    async function fetchOrders() {
+      try {
+        const res = await fetch('/api/orders', { headers });
+        if (!res.ok) throw new Error('Unauthorized');
+        return await res.json();
+      } catch (e) { console.error(e); return null; }
+    }
+
+    function renderOrders(orders) {
+      if (!orders || !orders.length) { document.getElementById('ordersContainer').innerText = 'No orders'; return; }
+      const html = ['<table><thead><tr><th>Id</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Action</th></tr></thead><tbody>'];
+      orders.forEach(o => {
+        html.push(`<tr><td>${o.id}</td><td>${o.customer_name}</td><td>${o.customer_phone || ''}</td><td>₵${(o.total||0).toFixed(2)}</td><td id="status-${o.id}">${o.status}</td><td><select onchange="updateStatus('${o.id}', this.value)"><option ${o.status==='Confirmed'?'selected':''}>Confirmed</option><option ${o.status==='Preparing'?'selected':''}>Preparing</option><option ${o.status==='Ready'?'selected':''}>Ready</option><option ${o.status==='Delivered'?'selected':''}>Delivered</option></select></td></tr>`);
+      });
+      html.push('</tbody></table>');
+      document.getElementById('ordersContainer').innerHTML = html.join('');
+    }
+
+    async function updateStatus(id, status) {
+      try {
+        const res = await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers, body: JSON.stringify({ status }) });
+        if (!res.ok) throw new Error('Update failed');
+        const data = await res.json();
+        if (data.success) document.getElementById('status-' + id).innerText = status;
+      } catch (e) { alert('Failed to update status'); console.error(e); }
+    }
+
+    (async function init(){
+      const sum = await fetchSummary();
+      const ord = await fetchOrders();
+
+      if (sum && sum.total_orders !== undefined) {
+        document.getElementById('totalOrders').innerText = sum.total_orders;
+        document.getElementById('revenue').innerText = '₵' + (sum.total_revenue||0).toFixed(2);
+      }
+
+      if (ord && ord.orders) {
+        const today = new Date().toISOString().split('T')[0];
+        const todays = ord.orders.filter(o => o.date === today);
+        document.getElementById('todayOrders').innerText = todays.length;
+        renderOrders(ord.orders.reverse());
+
+        // customers list
+        const customers = Array.from(new Map(ord.orders.map(o => [o.customer_phone || o.customer_name, {name:o.customer_name, phone:o.customer_phone}])).values());
+        document.getElementById('customers').innerHTML = '<ul>' + customers.map(c => `<li>${c.name} ${c.phone?'- '+c.phone:''}</li>`).join('') + '</ul>';
+      } else {
+        document.getElementById('ordersContainer').innerText = 'Unable to load orders';
+      }
+    })();
+  </script>
+</body>
+</html>

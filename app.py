@@ -537,9 +537,14 @@ def admin_page():
         return redirect('/admin-login')
 
     try:
-        idx_path = os.path.join(app.root_path, 'index.html')
-        with open(idx_path, 'r', encoding='utf-8') as f:
-            html = f.read()
+        admin_path = os.path.join(app.root_path, 'admin.html')
+        if os.path.exists(admin_path):
+            with open(admin_path, 'r', encoding='utf-8') as f:
+                html = f.read()
+        else:
+            idx_path = os.path.join(app.root_path, 'index.html')
+            with open(idx_path, 'r', encoding='utf-8') as f:
+                html = f.read()
         # Inject noindex meta into head for admin page responses
         if '<meta name="robots"' not in html:
             html = html.replace('</head>', '  <meta name="robots" content="noindex,nofollow">\n</head>')
