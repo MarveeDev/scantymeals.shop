@@ -532,29 +532,21 @@ def admin_page():
     except Exception:
         pass
 
-    # Only allow admin users to access the admin dashboard (redundant check)
-    if not getattr(request, 'user', None) or request.user.get('role') != 'admin':
-        return redirect('/admin-login')
+    # Ensure only the dedicated admin.html is served for the admin path
+    admin_path = os.path.join(app.root_path, 'admin.html')
+    if not os.path.exists(admin_path):
+        app.logger.error('admin.html not found')
+        return jsonify({"success": False, "message": "Admin UI not available"}), 500
 
     try:
-        admin_path = os.path.join(app.root_path, 'admin.html')
-        if os.path.exists(admin_path):
-            with open(admin_path, 'r', encoding='utf-8') as f:
-                html = f.read()
-        else:
-            idx_path = os.path.join(app.root_path, 'index.html')
-            with open(idx_path, 'r', encoding='utf-8') as f:
-                html = f.read()
-        # Inject noindex meta into head for admin page responses
-        if '<meta name="robots"' not in html:
-            html = html.replace('</head>', '  <meta name="robots" content="noindex,nofollow">\n</head>')
-        resp = make_response(html)
-        resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+        # Serve the dedicated admin.html file
+        resp = send_from_directory(app.root_path, 'admin.html')
+        # Add noindex headers
         resp.headers['X-Robots-Tag'] = 'noindex, nofollow'
         return resp
-    except Exception as e:
-        app.logger.exception('Failed to render admin page')
-        return send_from_directory('.', 'index.html')
+    except Exception:
+        app.logger.exception('Failed to send admin.html')
+        return jsonify({"success": False, "message": "Failed to load admin UI"}), 500
 
 
 @app.route('/admin-login')
