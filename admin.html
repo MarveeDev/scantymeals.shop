@@ -13,50 +13,143 @@
   </style>
 </head>
 <body>
-  <h1>ScantyMeals — Admin Dashboard</h1>
-  <div id="stats">
-    <div class="stat">Total Orders: <span id="totalOrders">-</span></div>
-    <div class="stat">Today's Orders: <span id="todayOrders">-</span></div>
-    <div class="stat">Revenue: <span id="revenue">-</span></div>
+  <!-- Header with logout button -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <h1>ScantyMeals — Admin Dashboard</h1>
+    <button id="logoutBtn" onclick="logout()" style="display:none;padding:8px 16px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer">Logout</button>
+  </div>
+  
+  <!-- Unauthorized access message (hidden by default) -->
+  <div id="authError" style="display:none;padding:15px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;border-radius:4px;margin-bottom:20px">
+    <strong>Unauthorized Access</strong><br>
+    Your session has expired or you are not authenticated as an admin.
+    <br><br>
+    <a href="/admin-login" style="color:#721c24;text-decoration:underline">Return to Login</a>
   </div>
 
-  <h2>Orders</h2>
-  <div id="ordersContainer">Loading...</div>
+  <!-- Admin content (hidden until authenticated) -->
+  <div id="adminContent" style="display:none">
+    <div id="stats">
+      <div class="stat">Total Orders: <span id="totalOrders">-</span></div>
+      <div class="stat">Today's Orders: <span id="todayOrders">-</span></div>
+      <div class="stat">Revenue: <span id="revenue">-</span></div>
+    </div>
 
-  <h2>Customers</h2>
-  <div id="customers">Loading...</div>
+    <h2>Orders</h2>
+    <div id="ordersContainer">Loading...</div>
+
+    <h2>Customers</h2>
+    <div id="customers">Loading...</div>
+  </div>
 
   <script>
-    const token = localStorage.getItem('token');
-    
-    // If no token, redirect to login
-    if (!token) {
-      console.warn('DEBUG: No admin token found. Redirecting to login...');
+    // ===== SECURITY: Authentication Check & Session Management =====
+    let token = null;
+    let headers = {};
+
+    function getToken() {
+      // Check both localStorage and sessionStorage for the token
+      return localStorage.getItem('token') || sessionStorage.getItem('token');
+    }
+
+    function clearAllStorage() {
+      localStorage.clear();
+      sessionStorage.clear();
+      console.log('DEBUG: All storage cleared (localStorage, sessionStorage)');
+    }
+
+    function logout() {
+      console.log('DEBUG: Logout initiated');
+      clearAllStorage();
+      token = null;
+      headers = {};
       window.location.href = '/admin-login';
     }
-    
-    const headers = token ? { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } : { 'Content-Type': 'application/json' };
 
+    function showUnauthorizedError() {
+      console.warn('DEBUG: Showing unauthorized access message');
+      document.getElementById('adminContent').style.display = 'none';
+      document.getElementById('authError').style.display = 'block';
+      document.getElementById('logoutBtn').style.display = 'none';
+    }
+
+    function showAdminContent() {
+      console.log('DEBUG: Showing admin content (authenticated)');
+      document.getElementById('authError').style.display = 'none';
+      document.getElementById('adminContent').style.display = 'block';
+      document.getElementById('logoutBtn').style.display = 'inline-block';
+    }
+
+    // ===== INITIAL AUTHENTICATION CHECK =====
+    (function initAuth() {
+      token = getToken();
+      console.log('DEBUG: Initial auth check. Token present:', !!token, 'length:', token ? token.length : 0);
+      
+      if (!token) {
+        console.warn('DEBUG: No admin token found in localStorage/sessionStorage. Redirecting to login...');
+        window.location.href = '/admin-login';
+        return;
+      }
+
+      // Token found - set up headers for all API requests
+      headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      };
+      
+      console.log('DEBUG: Token found. Configuring Authorization header.');
+      
+      // Show admin content and logout button
+      showAdminContent();
+      
+      // Load analytics data with authenticated token
+      initDashboard();
+    })();
+
+    // ===== API FETCH FUNCTIONS =====
     async function fetchSummary() {
       try {
-        console.log('DEBUG: Fetching summary', { url: '/api/analytics/summary', authPresent: !!token });
+        console.log('DEBUG: Fetching /api/analytics/summary with token:', !!token);
         const res = await fetch('/api/analytics/summary', { headers });
-        if (!res.ok) throw new Error('Unauthorized');
-        return await res.json();
-      } catch (e) { console.error(e); return null; }
+        if (!res.ok) {
+          console.error('DEBUG: /api/analytics/summary returned status', res.status);
+          if (res.status === 403) {
+            console.error('DEBUG: Admin auth failed (403). Token may be expired or invalid.');
+            showUnauthorizedError();
+          }
+          throw new Error('Analytics fetch failed');
+        }
+        const data = await res.json();
+        console.log('DEBUG: /api/analytics/summary success:', data);
+        return data;
+      } catch (e) { 
+        console.error('DEBUG: fetchSummary error:', e.message); 
+        return null; 
+      }
     }
 
     async function fetchOrders() {
       try {
-        console.log('DEBUG: Fetching orders', { url: '/api/orders', authPresent: !!token });
+        console.log('DEBUG: Fetching /api/orders with token:', !!token);
         const res = await fetch('/api/orders', { headers });
-        if (!res.ok) throw new Error('Unauthorized');
-        return await res.json();
-      } catch (e) { console.error(e); return null; }
+        if (!res.ok) {
+          console.error('DEBUG: /api/orders returned status', res.status);
+          throw new Error('Orders fetch failed');
+        }
+        const data = await res.json();
+        console.log('DEBUG: /api/orders success, count:', data.orders ? data.orders.length : 0);
+        return data;
+      } catch (e) { 
+        console.error('DEBUG: fetchOrders error:', e.message); 
+        return null; 
+      }
     }
 
     function renderOrders(orders) {
-      if (!orders || !orders.length) { document.getElementById('ordersContainer').innerText = 'No orders'; return; }
+      if (!orders || !orders.length) { 
+        document.getElementById('ordersContainer').innerText = 'No orders'; 
+        return; 
+      }
       const html = ['<table><thead><tr><th>Id</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Action</th></tr></thead><tbody>'];
       orders.forEach(o => {
         html.push(`<tr><td>${o.id}</td><td>${o.customer_name}</td><td>${o.customer_phone || ''}</td><td>₵${(o.total||0).toFixed(2)}</td><td id="status-${o.id}">${o.status}</td><td><select onchange="updateStatus('${o.id}', this.value)"><option ${o.status==='Confirmed'?'selected':''}>Confirmed</option><option ${o.status==='Preparing'?'selected':''}>Preparing</option><option ${o.status==='Ready'?'selected':''}>Ready</option><option ${o.status==='Delivered'?'selected':''}>Delivered</option></select></td></tr>`);
@@ -67,36 +160,59 @@
 
     async function updateStatus(id, status) {
       try {
-        console.log('DEBUG: Updating order status', { url: `/api/orders/${id}/status`, method: 'PUT', id, status, authPresent: !!token });
-        const res = await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers, body: JSON.stringify({ status }) });
-        if (!res.ok) throw new Error('Update failed');
+        console.log('DEBUG: Updating order status:', { id, status, authPresent: !!token });
+        const res = await fetch(`/api/orders/${id}/status`, { 
+          method: 'PUT', 
+          headers, 
+          body: JSON.stringify({ status }) 
+        });
+        if (!res.ok) {
+          console.error('DEBUG: Status update failed with status', res.status);
+          throw new Error('Update failed');
+        }
         const data = await res.json();
-        if (data.success) document.getElementById('status-' + id).innerText = status;
-      } catch (e) { alert('Failed to update status'); console.error(e); }
+        if (data.success) {
+          document.getElementById('status-' + id).innerText = status;
+          console.log('DEBUG: Order status updated successfully');
+        }
+      } catch (e) { 
+        alert('Failed to update status'); 
+        console.error('DEBUG: updateStatus error:', e.message); 
+      }
     }
 
-    (async function init(){
+    // ===== DASHBOARD INITIALIZATION =====
+    async function initDashboard() {
+      console.log('DEBUG: Initializing dashboard with authenticated token');
+      
       const sum = await fetchSummary();
       const ord = await fetchOrders();
 
+      // Update stats if summary fetch succeeded
       if (sum && sum.total_orders !== undefined) {
         document.getElementById('totalOrders').innerText = sum.total_orders;
         document.getElementById('revenue').innerText = '₵' + (sum.total_revenue||0).toFixed(2);
+        console.log('DEBUG: Stats updated - orders:', sum.total_orders, 'revenue: ₵' + sum.total_revenue);
+      } else {
+        console.warn('DEBUG: Summary data not available or invalid');
       }
 
+      // Update orders and customers if orders fetch succeeded
       if (ord && ord.orders) {
         const today = new Date().toISOString().split('T')[0];
         const todays = ord.orders.filter(o => o.date === today);
         document.getElementById('todayOrders').innerText = todays.length;
         renderOrders(ord.orders.reverse());
 
-        // customers list
+        // Build customers list from orders
         const customers = Array.from(new Map(ord.orders.map(o => [o.customer_phone || o.customer_name, {name:o.customer_name, phone:o.customer_phone}])).values());
         document.getElementById('customers').innerHTML = '<ul>' + customers.map(c => `<li>${c.name} ${c.phone?'- '+c.phone:''}</li>`).join('') + '</ul>';
+        console.log('DEBUG: Orders rendered, customers count:', customers.length);
       } else {
         document.getElementById('ordersContainer').innerText = 'Unable to load orders';
+        console.warn('DEBUG: Orders data not available or invalid');
       }
-    })();
+    }
   </script>
 </body>
 </html>
