@@ -740,7 +740,6 @@ def list_order_responses(order_id):
     return jsonify({"success": False, "message": "Order not found"}), 404
 
 @app.route('/api/orders/<order_id>/status', methods=['PUT'])
-@admin_required
 def update_order_status(order_id):
     data = request.json
     
