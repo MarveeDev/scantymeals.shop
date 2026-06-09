@@ -212,6 +212,12 @@ def admin_required(f):
     @wraps(f)
     @token_required
     def decorated(*args, **kwargs):
+        # Debug: log admin checks
+        try:
+            print("ADMIN_REQUIRED CHECK", getattr(request, 'user', None))
+        except Exception:
+            pass
+
         # Enforce admin access for protected routes
         if not getattr(request, 'user', None) or request.user.get('role') != 'admin':
             accept = request.headers.get('Accept', '')
@@ -517,9 +523,16 @@ def sitemap_file():
 
 
 @app.route('/admin')
-@token_required
+@admin_required
 def admin_page():
-    # Only allow admin users to access the admin dashboard
+    # Debug logs to verify this route is invoked and who the request user is
+    try:
+        print("ADMIN ROUTE HIT")
+        print("USER:", getattr(request, 'user', None))
+    except Exception:
+        pass
+
+    # Only allow admin users to access the admin dashboard (redundant check)
     if not getattr(request, 'user', None) or request.user.get('role') != 'admin':
         return redirect('/admin-login')
 

@@ -1455,10 +1455,10 @@ function goToPage(pageId, event, closeMobile = false) {
 }
 
 function showPage(pageId) {
-  // Login UI removed; allow page navigation without blocking.
-  if (pageId === 'admin' && app.user && app.user.role !== 'admin') {
+  // Login UI removed; block admin navigation for non-admin users.
+  if (pageId === 'admin' && (!app.user || app.user.role !== 'admin')) {
     alert('Admin access required');
-    return;
+    return false;
   }
 
   // Hide all pages
