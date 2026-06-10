@@ -314,7 +314,8 @@
   }
 
   async function fetchMenuFromApi() {
-    const res = await fetch('/api/menu', { method: 'GET' });
+    const API_BASE = 'https://scantymeals-shop-1.onrender.com/api';
+    const res = await fetch(`${API_BASE}/menu`, { method: 'GET' });
     if (!res.ok) {
       // propagate status so we can decide whether to fallback
       const err = new Error('menu api failed');

@@ -26,10 +26,6 @@
         "destination": "/admin.html"
       },
       {
-        "source": "/api/**",
-        "destination": "https://scantymeals-shop-1.onrender.com/api/"
-      },
-      {
         "source": "**",
         "destination": "/index.html"
       }
