@@ -580,8 +580,12 @@ def meals_file():
 
 @app.route('/api/menu', methods=['GET'])
 def get_menu():
-    # Keep menu publicly readable so first-time visitors can browse immediately.
-    # If meals.json exists, use it as the source of truth so frontend/backend stay in sync.
+    """Return public menu.
+
+    NOTE: Firebase hosting rewrites /api/** to a different backend.
+    This endpoint exists so the menu works both when deployed with Flask
+    and when proxied/replayed by the hosting layer.
+    """
     try:
         meals_path = os.path.join(app.root_path, 'meals.json')
         if os.path.exists(meals_path):
@@ -601,7 +605,7 @@ def get_menu():
                 })
             return jsonify({"success": True, "items": items})
     except Exception as e:
-        print(f"Warning: failed to read meals.json ({e}). Using default menu.")
+        print(f"Warning: failed to read meals.json ({e}). Using default menu. Error: {e}")
 
     return jsonify({"success": True, "items": MENU_ITEMS})
 

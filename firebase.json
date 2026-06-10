@@ -27,7 +27,7 @@
       },
       {
         "source": "/api/**",
-        "destination": "https://scanty-pro-app.onrender.com/api/"
+        "destination": "https://scantymeals-shop-1.onrender.com/api/"
       },
       {
         "source": "**",
