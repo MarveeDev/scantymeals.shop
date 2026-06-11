@@ -5,29 +5,46 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-      ".venv/**",
-      "__pycache__/**",
       "app.py",
       "requirements.txt",
-      "test_api.py",
-      "dl.py",
-      "run.err",
-      "run.log",
-      "Dockerfile",
-      ".dockerignore"
+      "Procfile",
+      "**/*.md",
+      "venv/**",
+      "__pycache__/**"
     ],
+    "cleanUrls": true,
+    "trailingSlash": false,
     "rewrites": [
+      { "source": "/", "destination": "/index.html" },
+      { "source": "/admin", "destination": "/admin.html" },
+      { "source": "/admin-login", "destination": "/admin-login.html" },
+      { "source": "**", "destination": "/index.html" }
+    ],
+    "headers": [
       {
-        "source": "/admin",
-        "destination": "/admin.html"
+        "source": "**/*.@(html)",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
+        ]
       },
       {
-        "source": "/admin/**",
-        "destination": "/admin.html"
+        "source": "**/*.@(jpg|jpeg|png|gif|svg|ico|webp)",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=86400" }
+        ]
       },
       {
-        "source": "**",
-        "destination": "/index.html"
+        "source": "**/*.@(js|css)",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=3600" }
+        ]
+      },
+      {
+        "source": "/admin.html",
+        "headers": [
+          { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+          { "key": "Cache-Control", "value": "no-store" }
+        ]
       }
     ]
   }

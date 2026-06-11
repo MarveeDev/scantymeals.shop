@@ -6,28 +6,30 @@
   <meta name="robots" content="noindex,nofollow">
   <title>ScantyMeals Admin</title>
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;padding:20px}
+    body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#1a1a1a}
     .stat{display:inline-block;padding:10px 16px;margin:8px;background:#f5f5f5;border-radius:6px}
     table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{padding:8px;border:1px solid #ddd;text-align:left}
+    th,td{padding:8px;border:1px solid #ddd;text-align:left;font-size:14px}
+    th{background:#fafafa}
+    .btn{padding:8px 16px;border:none;border-radius:4px;cursor:pointer;font-weight:600}
+    .btn-danger{background:#dc3545;color:#fff}
+    .err{padding:15px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;border-radius:4px;margin-bottom:20px}
+    h1{color:#FF6B35;margin:0}
   </style>
 </head>
 <body>
-  <!-- Header with logout button -->
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-    <h1>ScantyMeals — Admin Dashboard</h1>
-    <button id="logoutBtn" onclick="logout()" style="display:none;padding:8px 16px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer">Logout</button>
-  </div>
-  
-  <!-- Unauthorized access message (hidden by default) -->
-  <div id="authError" style="display:none;padding:15px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;border-radius:4px;margin-bottom:20px">
-    <strong>Unauthorized Access</strong><br>
-    Your session has expired or you are not authenticated as an admin.
-    <br><br>
-    <a href="/admin-login" style="color:#721c24;text-decoration:underline">Return to Login</a>
+    <h1>Scanty Meals — Admin Dashboard</h1>
+    <button id="logoutBtn" class="btn btn-danger" onclick="logout()" style="display:none">Logout</button>
   </div>
 
-  <!-- Admin content (hidden until authenticated) -->
+  <div id="authError" class="err" style="display:none">
+    <strong>Unauthorized Access</strong><br>
+    Your session has expired or you are not signed in as an admin.
+    <br><br>
+    <a href="/admin-login" style="color:#721c24;text-decoration:underline">Return to login</a>
+  </div>
+
   <div id="adminContent" style="display:none">
     <div id="stats">
       <div class="stat">Total Orders: <span id="totalOrders">-</span></div>
@@ -43,176 +45,171 @@
   </div>
 
   <script>
-    // ===== SECURITY: Authentication Check & Session Management =====
+    // ============================================================
+    // CONFIG — admin.html may be served from Render OR Firebase.
+    // When served from Firebase, /api/** does not exist locally, so
+    // we point to Render directly. Adjust this URL once if you move.
+    // ============================================================
+    const API_BASE = (location.hostname.endsWith('onrender.com') || location.hostname === 'localhost')
+      ? ''  // same-origin
+      : 'https://scantymeals-shop-1.onrender.com';
+
+    const STORAGE_KEYS = ['token', 'user', 'admin_token'];
     let token = null;
     let headers = {};
 
     function getToken() {
-      // Check both localStorage and sessionStorage for the token
       return localStorage.getItem('token') || sessionStorage.getItem('token');
     }
 
-    function clearAllStorage() {
-      localStorage.clear();
-      sessionStorage.clear();
-      console.log('DEBUG: All storage cleared (localStorage, sessionStorage)');
+    function clearAuthStorage() {
+      STORAGE_KEYS.forEach(k => {
+        try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (_) {}
+      });
     }
 
     function logout() {
-      console.log('DEBUG: Logout initiated');
-      clearAllStorage();
+      clearAuthStorage();
       token = null;
       headers = {};
       window.location.href = '/admin-login';
     }
 
-    function showUnauthorizedError() {
-      console.warn('DEBUG: Showing unauthorized access message');
+    function showUnauthorized() {
       document.getElementById('adminContent').style.display = 'none';
       document.getElementById('authError').style.display = 'block';
       document.getElementById('logoutBtn').style.display = 'none';
+      // Clear bad token so refresh from /admin-login is clean
+      clearAuthStorage();
     }
 
     function showAdminContent() {
-      console.log('DEBUG: Showing admin content (authenticated)');
       document.getElementById('authError').style.display = 'none';
       document.getElementById('adminContent').style.display = 'block';
       document.getElementById('logoutBtn').style.display = 'inline-block';
     }
 
-    // ===== INITIAL AUTHENTICATION CHECK =====
-    (function initAuth() {
-      token = getToken();
-      console.log('DEBUG: Initial auth check. Token present:', !!token, 'length:', token ? token.length : 0);
-      
-      if (!token) {
-        console.warn('DEBUG: No admin token found in localStorage/sessionStorage. Redirecting to login...');
-        window.location.href = '/admin-login';
-        return;
-      }
+    function api(path, opts = {}) {
+      return fetch(API_BASE + path, { ...opts, headers: { ...headers, ...(opts.headers || {}) } });
+    }
 
-      // Token found - set up headers for all API requests
-      headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token
-      };
-      
-      console.log('DEBUG: Token found. Configuring Authorization header.');
-      
-      // Show admin content and logout button
-      showAdminContent();
-      
-      // Load analytics data with authenticated token
-      initDashboard();
-    })();
-
-    // ===== API FETCH FUNCTIONS =====
     async function fetchSummary() {
       try {
-        console.log('DEBUG: Fetching /api/analytics/summary with token:', !!token);
-        const res = await fetch('/api/analytics/summary', { headers });
-        if (!res.ok) {
-          console.error('DEBUG: /api/analytics/summary returned status', res.status);
-          if (res.status === 403) {
-            console.error('DEBUG: Admin auth failed (403). Token may be expired or invalid.');
-            showUnauthorizedError();
-          }
-          throw new Error('Analytics fetch failed');
-        }
-        const data = await res.json();
-        console.log('DEBUG: /api/analytics/summary success:', data);
-        return data;
-      } catch (e) { 
-        console.error('DEBUG: fetchSummary error:', e.message); 
-        return null; 
+        const res = await api('/api/analytics/summary');
+        if (res.status === 401 || res.status === 403) { showUnauthorized(); throw new Error('auth'); }
+        if (!res.ok) throw new Error('summary fetch failed: ' + res.status);
+        return await res.json();
+      } catch (e) {
+        console.error('fetchSummary:', e.message);
+        return null;
       }
     }
 
     async function fetchOrders() {
       try {
-        console.log('DEBUG: Fetching /api/orders with token:', !!token);
-        const res = await fetch('/api/orders', { headers });
-        if (!res.ok) {
-          console.error('DEBUG: /api/orders returned status', res.status);
-          throw new Error('Orders fetch failed');
-        }
-        const data = await res.json();
-        console.log('DEBUG: /api/orders success, count:', data.orders ? data.orders.length : 0);
-        return data;
-      } catch (e) { 
-        console.error('DEBUG: fetchOrders error:', e.message); 
-        return null; 
+        const res = await api('/api/orders');
+        if (res.status === 401 || res.status === 403) { showUnauthorized(); throw new Error('auth'); }
+        if (!res.ok) throw new Error('orders fetch failed: ' + res.status);
+        return await res.json();
+      } catch (e) {
+        console.error('fetchOrders:', e.message);
+        return null;
       }
     }
 
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
+
     function renderOrders(orders) {
-      if (!orders || !orders.length) { 
-        document.getElementById('ordersContainer').innerText = 'No orders'; 
-        return; 
-      }
-      const html = ['<table><thead><tr><th>Id</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Action</th></tr></thead><tbody>'];
-      orders.forEach(o => {
-        html.push(`<tr><td>${o.id}</td><td>${o.customer_name}</td><td>${o.customer_phone || ''}</td><td>₵${(o.total||0).toFixed(2)}</td><td id="status-${o.id}">${o.status}</td><td><select onchange="updateStatus('${o.id}', this.value)"><option ${o.status==='Confirmed'?'selected':''}>Confirmed</option><option ${o.status==='Preparing'?'selected':''}>Preparing</option><option ${o.status==='Ready'?'selected':''}>Ready</option><option ${o.status==='Delivered'?'selected':''}>Delivered</option></select></td></tr>`);
-      });
-      html.push('</tbody></table>');
-      document.getElementById('ordersContainer').innerHTML = html.join('');
+      const container = document.getElementById('ordersContainer');
+      if (!orders || !orders.length) { container.textContent = 'No orders'; return; }
+      const rows = orders.map(o => {
+        const id = escapeHtml(o.id);
+        const total = (Number(o.total) || 0).toFixed(2);
+        const statusOpts = ['Confirmed','Preparing','Ready','Delivered','Cancelled']
+          .map(s => `<option ${o.status===s?'selected':''}>${s}</option>`).join('');
+        return `<tr>
+          <td>${id}</td>
+          <td>${escapeHtml(o.customer_name)}</td>
+          <td>${escapeHtml(o.customer_phone || '')}</td>
+          <td>₵${total}</td>
+          <td id="status-${id}">${escapeHtml(o.status)}</td>
+          <td><select onchange="updateStatus('${id}', this.value)">${statusOpts}</select></td>
+        </tr>`;
+      }).join('');
+      container.innerHTML = `
+        <table>
+          <thead><tr><th>ID</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
     }
 
     async function updateStatus(id, status) {
       try {
-        console.log('DEBUG: Updating order status:', { id, status, authPresent: !!token });
-        const res = await fetch(`/api/orders/${id}/status`, { 
-          method: 'PUT', 
-          headers, 
-          body: JSON.stringify({ status }) 
+        const res = await api(`/api/orders/${encodeURIComponent(id)}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
         });
-        if (!res.ok) {
-          console.error('DEBUG: Status update failed with status', res.status);
-          throw new Error('Update failed');
-        }
+        if (!res.ok) throw new Error('status update failed: ' + res.status);
         const data = await res.json();
         if (data.success) {
-          document.getElementById('status-' + id).innerText = status;
-          console.log('DEBUG: Order status updated successfully');
+          const cell = document.getElementById('status-' + id);
+          if (cell) cell.textContent = status;
         }
-      } catch (e) { 
-        alert('Failed to update status'); 
-        console.error('DEBUG: updateStatus error:', e.message); 
+      } catch (e) {
+        alert('Failed to update status');
+        console.error(e);
       }
     }
 
-    // ===== DASHBOARD INITIALIZATION =====
     async function initDashboard() {
-      console.log('DEBUG: Initializing dashboard with authenticated token');
-      
-      const sum = await fetchSummary();
-      const ord = await fetchOrders();
+      const [sum, ord] = await Promise.all([fetchSummary(), fetchOrders()]);
 
-      // Update stats if summary fetch succeeded
-      if (sum && sum.total_orders !== undefined) {
-        document.getElementById('totalOrders').innerText = sum.total_orders;
-        document.getElementById('revenue').innerText = '₵' + (sum.total_revenue||0).toFixed(2);
-        console.log('DEBUG: Stats updated - orders:', sum.total_orders, 'revenue: ₵' + sum.total_revenue);
-      } else {
-        console.warn('DEBUG: Summary data not available or invalid');
+      if (sum && typeof sum.total_orders !== 'undefined') {
+        document.getElementById('totalOrders').textContent = sum.total_orders;
+        document.getElementById('revenue').textContent = '₵' + (Number(sum.total_revenue) || 0).toFixed(2);
       }
 
-      // Update orders and customers if orders fetch succeeded
-      if (ord && ord.orders) {
-        const today = new Date().toISOString().split('T')[0];
+      if (ord && Array.isArray(ord.orders)) {
+        const today = new Date().toISOString().slice(0, 10);
         const todays = ord.orders.filter(o => o.date === today);
-        document.getElementById('todayOrders').innerText = todays.length;
-        renderOrders(ord.orders.reverse());
+        document.getElementById('todayOrders').textContent = todays.length;
+        renderOrders([...ord.orders].reverse());
 
-        // Build customers list from orders
-        const customers = Array.from(new Map(ord.orders.map(o => [o.customer_phone || o.customer_name, {name:o.customer_name, phone:o.customer_phone}])).values());
-        document.getElementById('customers').innerHTML = '<ul>' + customers.map(c => `<li>${c.name} ${c.phone?'- '+c.phone:''}</li>`).join('') + '</ul>';
-        console.log('DEBUG: Orders rendered, customers count:', customers.length);
+        const map = new Map();
+        ord.orders.forEach(o => {
+          const k = o.customer_phone || o.customer_name;
+          if (!k) return;
+          map.set(k, { name: o.customer_name, phone: o.customer_phone });
+        });
+        const customers = [...map.values()];
+        document.getElementById('customers').innerHTML =
+          '<ul>' + customers.map(c =>
+            `<li>${escapeHtml(c.name)}${c.phone ? ' — ' + escapeHtml(c.phone) : ''}</li>`
+          ).join('') + '</ul>';
       } else {
-        document.getElementById('ordersContainer').innerText = 'Unable to load orders';
-        console.warn('DEBUG: Orders data not available or invalid');
+        document.getElementById('ordersContainer').textContent = 'Unable to load orders';
       }
     }
+
+    // ===== Bootstrap =====
+    (function init() {
+      token = getToken();
+      if (!token) {
+        window.location.href = '/admin-login';
+        return;
+      }
+      headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+      };
+      showAdminContent();
+      initDashboard();
+    })();
   </script>
 </body>
 </html>

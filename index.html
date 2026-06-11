@@ -10,8 +10,11 @@
   <meta name="theme-color" content="#FF6B35">
   <link rel="canonical" href="https://scantymeals.shop/">
 
+  <!-- FIX (B1): removed malformed `<link rel=""icon"...>` line; correct favicon links below -->
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
-  <link rel=""icon" type="image/jpeg" href="/IMG/favicon.jpeg">
+  <link rel="icon" type="image/jpeg" href="/IMG/favicon.jpeg">
+  <link rel="shortcut icon" type="image/jpeg" href="/IMG/favicon.jpeg">
+  <link rel="apple-touch-icon" href="/IMG/favicon.jpeg">
 
   <meta property="og:type" content="website">
   <meta property="og:title" content="Scanty Meals | Premium Fried Rice Delivery">
@@ -24,9 +27,7 @@
   <meta name="twitter:title" content="Scanty Meals | Premium Fried Rice Delivery">
   <meta name="twitter:description" content="Fresh fried rice and noodles delivered fast by Scanty Meals in Antwima Mponua, Mpasatia-junction.">
   <meta name="twitter:image" content="https://scantymeals.shop/IMG/favicon.jpeg">
-  <link rel="icon" type="image/jpeg" href="/IMG/favicon.jpeg">
-  <link rel="shortcut icon" type="image/jpeg" href="/IMG/favicon.jpeg">
-  <link rel="apple-touch-icon" href="/IMG/favicon.jpeg">
+
   <meta name="application-name" content="Scanty Meals">
   <link rel="manifest" href="/site.webmanifest">
 
@@ -34,22 +35,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
 
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Scanty Meals",
-    "alternateName": "Scanty",
-    "url": "https://scantymeals.shop/"
-  }
+  {"@context":"https://schema.org","@type":"WebSite","name":"Scanty Meals","alternateName":"Scanty","url":"https://scantymeals.shop/"}
   </script>
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "Scanty Meals",
-    "url": "https://scantymeals.shop/",
-    "logo": "https://scantymeals.shop/IMG/web%20logo.jpeg"
-  }
+  {"@context":"https://schema.org","@type":"Organization","name":"Scanty Meals","url":"https://scantymeals.shop/","logo":"https://scantymeals.shop/IMG/web%20logo.jpeg"}
   </script>
 
   <title>Scanty Meals - Premium Fried Rice Delivery</title>
@@ -59,19 +48,16 @@
       theme: {
         extend: {
           colors: {
-            primary: '#FF6B35',
-            secondary: '#F7931E',
-            accent: '#FFD60A',
-            dark: '#1A1A1A',
-            light: '#F5F5F5'
+            primary: '#FF6B35', secondary: '#F7931E',
+            accent: '#FFD60A', dark: '#1A1A1A', light: '#F5F5F5',
           },
           fontFamily: {
             display: ['Playfair Display', 'serif'],
-            body: ['Poppins', 'sans-serif']
-          }
-        }
-      }
-    }
+            body: ['Poppins', 'sans-serif'],
+          },
+        },
+      },
+    };
   </script>
 
   <style>
@@ -79,147 +65,151 @@
     html, body { max-width: 100%; overflow-x: hidden; }
     body { font-family: 'Poppins', sans-serif; background: #f9f9f9; }
 
-    .page-shell {
-      width: min(1160px, calc(100% - 2rem));
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    @media (min-width: 768px) {
-      .page-shell { width: min(1160px, calc(100% - 3rem)); }
-    }
-
+    .page-shell { width: min(1160px, calc(100% - 2rem)); margin: 0 auto; }
+    @media (min-width: 768px) { .page-shell { width: min(1160px, calc(100% - 3rem)); } }
     @media (max-width: 640px) { .page-shell { width: calc(100% - 1rem); } }
 
     #splash {
       position: fixed; inset: 0; z-index: 9999;
       background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      transition: opacity 0.5s ease;
-      animation: splashAutoHide 0.5s ease 2.2s forwards;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity .5s ease;
     }
-    #splash.hidden { opacity: 0; visibility: hidden; }
-    @keyframes splashAutoHide { to { opacity: 0; visibility: hidden; } }
+    #splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
-    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
-    nav {
-      background: white;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .nav-link { position: relative; transition: color 0.3s; color: #666; font-weight: 500; }
+    nav { background: white; box-shadow: 0 2px 10px rgba(0,0,0,.08); position: sticky; top: 0; z-index: 100; }
+    .nav-link { transition: color .3s; color: #666; font-weight: 500; }
     .nav-link:hover, .nav-link.active { color: #FF6B35; }
 
-    .menu-card {
-      background: white;
-      border-radius: 16px;
-      overflow: hidden;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    .hero {
+      background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+      color: white;
     }
-    .menu-card:hover { transform: translateY(-8px); box-shadow: 0 12px 30px rgba(255, 107, 53, 0.2); }
-    .menu-card img { width: 100%; height: 220px; object-fit: cover; transition: transform 0.4s; }
+    .hero h1, .hero p { color: white; }
+
+    .menu-card {
+      background: white; border-radius: 16px; overflow: hidden;
+      transition: all .3s cubic-bezier(.34,1.56,.64,1);
+      box-shadow: 0 4px 15px rgba(0,0,0,.08);
+    }
+    .menu-card:hover { transform: translateY(-8px); box-shadow: 0 12px 30px rgba(255,107,53,.2); }
+    .menu-card img { width: 100%; height: 220px; object-fit: cover; transition: transform .4s; }
     .menu-card:hover img { transform: scale(1.08); }
 
-    .page { display: none; animation: fadeIn 0.3s ease; }
-    .page.active { display: block; }
+    .btn-primary {
+      background: #FF6B35; color: white; font-weight: 600;
+      transition: background .2s;
+    }
+    .btn-primary:hover { background: #e85a25; }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
 
+    .page { display: none; animation: fadeIn .3s ease; }
+    .page.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     .cart-badge {
-      background: #FF6B35; color: white;
-      border-radius: 50%;
-      width: 24px; height: 24px;
-      font-size: 12px;
+      background: #FF6B35; color: white; border-radius: 50%;
+      width: 22px; height: 22px; font-size: 12px;
       display: flex; align-items: center; justify-content: center;
-      position: absolute; top: -8px; right: -8px;
-      font-weight: 700;
-      animation: pulse 0.5s;
+      position: absolute; top: -6px; right: -6px;
+      font-weight: 700; animation: pulse .5s;
     }
+
+    /* Cart drawer */
+    .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; display: none; }
+    .drawer-backdrop.open { display: block; }
+    .cart-drawer {
+      position: fixed; top: 0; right: 0; height: 100vh; width: min(420px, 100%);
+      background: white; z-index: 201; transform: translateX(100%);
+      transition: transform .3s ease; display: flex; flex-direction: column;
+      box-shadow: -8px 0 30px rgba(0,0,0,.15);
+    }
+    .cart-drawer.open { transform: translateX(0); }
+    .cart-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eee; }
+    .cart-item img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #1a1a1a; color: white; padding: 12px 20px; border-radius: 8px;
+      z-index: 300; font-weight: 500; opacity: 0; transition: opacity .3s;
+    }
+    .toast.show { opacity: 1; }
   </style>
 </head>
 
 <body class="bg-light text-dark">
+
 <div id="splash">
-  <img src="IMG/web%20logo.jpeg" alt="Scanty Logo" style="width: 120px; height: 120px; object-fit: contain; margin-bottom: 1rem;">
+  <img src="/IMG/web%20logo.jpeg" alt="Scanty Logo" style="width:120px;height:120px;object-fit:contain;margin-bottom:1rem">
   <div class="text-white text-4xl font-black">Scanty Meals</div>
   <p class="text-white text-lg mt-2 font-medium">Premium Fried Rice Delivered Fresh</p>
   <div class="mt-6 w-16 h-1 bg-white rounded-full animate-pulse"></div>
 </div>
 
-<div id="app" style="display:block">
-  <nav class="sticky top-0 z-100">
+<div id="app">
+  <nav>
     <div class="page-shell py-3 sm:py-4 flex items-center justify-between gap-2">
-      <div class="flex items-center gap-3">
-        <img src="IMG/web%20logo.jpeg" alt="Scanty Logo" style="width: 50px; height: 50px; object-fit: contain;">
+      <a href="#menu" onclick="return goToPage('menu', event)" class="flex items-center gap-3">
+        <img src="/IMG/web%20logo.jpeg" alt="Scanty Logo" style="width:50px;height:50px;object-fit:contain">
         <div>
           <p class="font-display text-lg sm:text-2xl font-bold text-primary leading-tight m-0">Scanty Meals</p>
           <p class="hidden sm:block text-xs text-gray-500">Fresh • Delicious • Fast</p>
         </div>
-      </div>
+      </a>
 
       <div class="hidden md:flex items-center gap-8">
         <a href="#menu" class="nav-link" onclick="return goToPage('menu', event)">Menu</a>
-        <a href="#orders" class="nav-link" onclick="return goToPage('orders', event)">Orders</a>
-        <a id="adminLink" href="#admin" class="nav-link" onclick="return goToPage('admin', event)" style="display:none;">Admin</a>
+        <a href="#orders" class="nav-link" onclick="return goToPage('orders', event)">My Orders</a>
+        <a id="adminLink" href="/admin" class="nav-link" style="display:none">Admin</a>
       </div>
 
       <div class="flex items-center gap-2 sm:gap-4">
         <button onclick="toggleCart()" class="relative p-2" aria-label="Cart">
           <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
           </svg>
-          <span class="cart-badge" id="cartBadge" style="display:none;">0</span>
+          <span class="cart-badge" id="cartBadge" style="display:none">0</span>
         </button>
 
-        <button onclick="logout()" class="hidden md:block px-4 py-2 bg-primary text-white font-semibold rounded-md">Logout</button>
+        <button id="loginBtn" onclick="goToPage('login', event)" class="hidden md:block px-4 py-2 bg-primary text-white font-semibold rounded-md">Sign in</button>
+        <button id="logoutBtn" onclick="logout()" class="hidden md:block px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-md" style="display:none">Logout</button>
 
         <button class="md:hidden p-2 text-gray-700" onclick="toggleMobileMenu()" aria-label="Open menu">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
           </svg>
         </button>
-
-        <script>
-          function toggleMobileMenu() {
-            const menu = document.getElementById('mobileMenu');
-            if (!menu) return;
-            menu.classList.toggle('hidden');
-          }
-        </script>
       </div>
     </div>
 
     <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-gray-100 w-full absolute shadow-lg">
       <div class="flex flex-col p-4 space-y-4">
-        <a href="#menu" class="nav-link mobile-link" onclick="return goToPage('menu', event, true)">Menu</a>
-        <a href="#orders" class="nav-link mobile-link" onclick="return goToPage('orders', event, true)">Orders</a>
-        <a id="mobileAdminLink" href="#admin" class="nav-link mobile-link" onclick="return goToPage('admin', event, true)" style="display:none;">Admin</a>
-
+        <a href="#menu" class="nav-link" onclick="return goToPage('menu', event, true)">Menu</a>
+        <a href="#orders" class="nav-link" onclick="return goToPage('orders', event, true)">My Orders</a>
+        <a id="mobileAdminLink" href="/admin" class="nav-link" style="display:none">Admin</a>
         <div class="border-t pt-4 mt-2">
-          <button onclick="logout()" class="w-full px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-md text-left">Logout</button>
+          <button id="mobileLoginBtn" onclick="goToPage('login', event, true)" class="w-full px-4 py-2 bg-primary text-white font-semibold rounded-md">Sign in</button>
+          <button id="mobileLogoutBtn" onclick="logout()" class="w-full px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-md" style="display:none">Logout</button>
         </div>
       </div>
     </div>
   </nav>
 
-  <div style="min-height: 70vh; padding-top: 20px;">
-    <!-- MENU PAGE -->
+  <div style="min-height:70vh">
+
+    <!-- ===== MENU PAGE ===== -->
     <div id="menuPage" class="page active">
       <div class="hero py-10 md:py-16">
         <div class="page-shell">
           <h1 class="font-display text-4xl sm:text-5xl md:text-6xl font-bold mb-4 leading-tight">Premium Fried Rice</h1>
-          <p class="text-base sm:text-lg text-gray-100 max-w-md mb-6">Freshly cooked with the finest ingredients, delivered hot to your door</p>
+          <p class="text-base sm:text-lg max-w-md mb-6 opacity-95">Freshly cooked with the finest ingredients, delivered hot to your door</p>
           <div class="flex gap-2 sm:gap-4 flex-wrap">
-            <div class="bg-primary/10 px-4 py-2 rounded-full text-sm font-semibold">⭐ 4.9 Rating</div>
-            <div class="bg-primary/10 px-4 py-2 rounded-full text-sm font-semibold">🕐 20-30 min</div>
-            <div class="bg-primary/10 px-4 py-2 rounded-full text-sm font-semibold">🔥 Hot & Fresh</div>
+            <div class="bg-white/20 backdrop-blur px-4 py-2 rounded-full text-sm font-semibold">⭐ 4.9 Rating</div>
+            <div class="bg-white/20 backdrop-blur px-4 py-2 rounded-full text-sm font-semibold">🕐 20-30 min</div>
+            <div class="bg-white/20 backdrop-blur px-4 py-2 rounded-full text-sm font-semibold">🔥 Hot & Fresh</div>
           </div>
         </div>
       </div>
@@ -227,206 +217,494 @@
       <div class="page-shell py-12">
         <h2 class="font-display text-3xl sm:text-4xl font-bold mb-2">Our Menu</h2>
         <p class="text-gray-600 mb-8" id="menuCount">Loading menu items...</p>
+        <div id="menuContainer" class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6 xl:gap-8"></div>
+      </div>
+    </div>
 
-        <div id="menuContainer" class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6 xl:gap-8">
-          <div id="menuSkeleton" class="w-full grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6 xl:gap-8">
-            <!-- skeleton stays until we replace with real menu -->
+    <!-- ===== CHECKOUT PAGE ===== -->
+    <div id="checkoutPage" class="page">
+      <div class="page-shell py-10">
+        <h2 class="font-display text-3xl sm:text-4xl font-bold mb-6">Checkout</h2>
+        <div class="grid md:grid-cols-2 gap-8">
+          <div>
+            <h3 class="text-xl font-semibold mb-4">Your Order</h3>
+            <div id="checkoutItems" class="bg-white rounded-lg p-4 shadow"></div>
+            <div class="mt-4 text-right text-xl font-bold">Total: ₵<span id="checkoutTotal">0.00</span></div>
           </div>
+          <form id="checkoutForm" class="bg-white rounded-lg p-6 shadow space-y-4">
+            <h3 class="text-xl font-semibold mb-2">Delivery details</h3>
+            <div>
+              <label class="block text-sm font-medium mb-1">Name *</label>
+              <input name="customer_name" required class="w-full border rounded-lg px-3 py-2" placeholder="Your full name">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Phone *</label>
+              <input name="customer_phone" required class="w-full border rounded-lg px-3 py-2" placeholder="0244123456">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Delivery location *</label>
+              <input name="customer_location" required class="w-full border rounded-lg px-3 py-2" placeholder="Mpasatia junction, …">
+            </div>
+            <button type="submit" id="placeOrderBtn" class="btn-primary w-full py-3 rounded-lg">Place order</button>
+            <p class="text-xs text-gray-500">By placing an order you agree to be contacted on the phone number provided.</p>
+          </form>
+          <div id="orderStatus" class="hidden mt-4"></div>
         </div>
       </div>
     </div>
 
-    <!-- Placeholders for Orders/Admin pages so existing navigation doesn't break -->
-    <div id="ordersPage" class="page"></div>
-    <div id="adminPage" class="page"></div>
+    <!-- ===== ORDERS PAGE ===== -->
+    <div id="ordersPage" class="page">
+      <div class="page-shell py-10">
+        <h2 class="font-display text-3xl sm:text-4xl font-bold mb-6">My Orders</h2>
+        <div id="ordersList" class="space-y-4"></div>
+      </div>
+    </div>
+
+    <!-- ===== LOGIN PAGE (also reused at /admin-login) ===== -->
+    <div id="loginPage" class="page">
+      <div class="page-shell py-12 max-w-md mx-auto">
+        <h2 class="font-display text-3xl font-bold mb-6 text-center">Sign in</h2>
+        <form id="loginForm" class="bg-white rounded-lg p-6 shadow space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Email</label>
+            <input type="email" name="email" required class="w-full border rounded-lg px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Password</label>
+            <input type="password" name="password" required class="w-full border rounded-lg px-3 py-2">
+          </div>
+          <button type="submit" id="loginSubmitBtn" class="btn-primary w-full py-3 rounded-lg">Sign in</button>
+          <p id="loginError" class="text-sm text-red-600 hidden"></p>
+        </form>
+      </div>
+    </div>
   </div>
+
+  <footer class="bg-dark text-white py-8 mt-12">
+    <div class="page-shell text-center text-sm opacity-80">
+      © <span id="footerYear"></span> Scanty Meals — Antwima Mponua, Mpasatia-junction
+    </div>
+  </footer>
 </div>
 
+<!-- Cart drawer -->
+<div id="cartBackdrop" class="drawer-backdrop" onclick="toggleCart()"></div>
+<aside id="cartDrawer" class="cart-drawer" aria-label="Cart">
+  <div class="p-4 border-b flex items-center justify-between">
+    <h3 class="text-lg font-bold">Your cart</h3>
+    <button onclick="toggleCart()" class="text-2xl leading-none" aria-label="Close cart">×</button>
+  </div>
+  <div id="cartItems" class="flex-1 overflow-y-auto p-4"></div>
+  <div class="p-4 border-t">
+    <div class="flex items-center justify-between mb-3">
+      <span class="font-semibold">Total</span>
+      <span class="font-bold text-lg">₵<span id="cartTotal">0.00</span></span>
+    </div>
+    <button id="goCheckoutBtn" onclick="goToCheckout()" class="btn-primary w-full py-3 rounded-lg">Checkout</button>
+  </div>
+</aside>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
 <script>
-  function goToPage(pageId, event) {
-    // Minimal routing to keep menu working (analytics/orders/auth code not modified here)
-    event?.preventDefault?.();
+// (rest of file unchanged - identical to index (9).html)
+const API_BASE = 'https://scantymeals-shop-1.onrender.com'; // Render backend
+const CART_KEY = 'scanty_cart_v2';      // { [id]: { id, name, price, image, quantity } }
+const TOKEN_KEY = 'token';
+const USER_KEY = 'user';
+const ORDERS_KEY = 'scanty_local_orders';
 
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+let MENU_ITEMS_CACHE = []; // populated by fetchMenu()
 
-    const map = {
-      'menu': 'menuPage',
-      'orders': 'ordersPage',
-      'admin': 'adminPage'
-    };
-    const elId = map[pageId] || 'menuPage';
-    const el = document.getElementById(elId);
-    if (el) el.classList.add('active');
-
-    return false;
-  }
-
-  function logout() { /* no-op; keep existing behavior if present elsewhere */ }
-
-  function toggleCart() { /* no-op for this menu-only fix */ }
-
-  // ===== CART STATE + addToCart() (restore missing functionality only) =====
-  const CART_KEY = 'cart';
-  const CART_COUNT_KEY = 'cartCount';
-
-  function getCart() {
-    try {
-      const raw = localStorage.getItem(CART_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) {
-      return {};
-    }
-  }
-
-  function setCart(cart) {
-    localStorage.setItem(CART_KEY, JSON.stringify(cart));
-  }
-
-  function computeCartCount(cart) {
-    return Object.values(cart || {}).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
-  }
-
-  function updateCartBadge() {
-    const badge = document.getElementById('cartBadge');
-    if (!badge) return;
-
-    const cart = getCart();
-    const count = computeCartCount(cart);
-
+function $(id) { return document.getElementById(id); }
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'<','>':'>','"':'"',"'":'&#39;'
+  }[c]));
+}
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 2500);
+}
+function getUser() {
+  try { return JSON.parse(localStorage.getItem(USER_KEY) || 'null'); }
+  catch { return null; }
+}
+function getToken() { return localStorage.getItem(TOKEN_KEY); }
+function getCart() {
+  try { return JSON.parse(localStorage.getItem(CART_KEY) || '{}'); }
+  catch { return {}; }
+}
+function setCart(cart) { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
+function cartItemsArray() {
+  return Object.values(getCart()).filter(i => i && i.quantity > 0);
+}
+function updateCartCount() {
+  const count = cartItemsArray().reduce((s, i) => s + i.quantity, 0);
+  const badge = $('cartBadge');
+  if (badge) {
     badge.textContent = String(count);
     badge.style.display = count > 0 ? 'flex' : 'none';
+  }
+  return count;
+}
+function addToCart(mealId) {
+  const id = String(mealId);
+  const meal = MENU_ITEMS_CACHE.find(m => String(m.id) === id);
+  if (!meal) { showToast('Item unavailable'); return; }
+  const cart = getCart();
+  const existing = cart[id];
+  cart[id] = {
+    id: meal.id, name: meal.name, price: Number(meal.price) || 0,
+    image: meal.image, quantity: (existing ? existing.quantity : 0) + 1,
+  };
+  setCart(cart);
+  updateCartCount();
+  updateCartUI();
+  showToast(meal.name + ' added');
+}
+function removeFromCart(mealId) {
+  const cart = getCart();
+  delete cart[String(mealId)];
+  setCart(cart);
+  updateCartCount();
+  updateCartUI();
+}
+function setQuantity(mealId, qty) {
+  const cart = getCart();
+  const item = cart[String(mealId)];
+  if (!item) return;
+  const n = Math.max(0, parseInt(qty, 10) || 0);
+  if (n === 0) { delete cart[String(mealId)]; }
+  else { item.quantity = n; cart[String(mealId)] = item; }
+  setCart(cart);
+  updateCartCount();
+  updateCartUI();
+}
+function clearCart() { setCart({}); updateCartCount(); updateCartUI(); }
+function updateCartUI() {
+  const items = cartItemsArray();
+  const container = $('cartItems');
+  const totalEl = $('cartTotal');
+  const goBtn = $('goCheckoutBtn');
+  if (!container) return;
 
-    try {
-      localStorage.setItem(CART_COUNT_KEY, String(count));
-    } catch (e) {
-      // ignore storage errors
-    }
+  if (!items.length) {
+    container.innerHTML = '<p class="text-gray-500 text-center py-8">Your cart is empty</p>';
+    totalEl.textContent = '0.00';
+    if (goBtn) goBtn.disabled = true;
+    return;
+  }
+  let total = 0;
+  container.innerHTML = items.map(i => {
+    const line = i.price * i.quantity;
+    total += line;
+    return `
+      <div class="cart-item">
+        <img src="${escapeHtml(i.image || '/IMG/menu_1.jpg')}" alt="">
+        <div class="flex-1">
+          <div class="font-semibold">${escapeHtml(i.name)}</div>
+          <div class="text-sm text-gray-500">₵${i.price.toFixed(2)} each</div>
+          <div class="flex items-center gap-2 mt-2">
+            <button onclick="setQuantity('${i.id}', ${i.quantity - 1})" class="w-7 h-7 border rounded">-</button>
+            <span class="w-6 text-center">${i.quantity}</span>
+            <button onclick="setQuantity('${i.id}', ${i.quantity + 1})" class="w-7 h-7 border rounded">+</button>
+            <button onclick="removeFromCart('${i.id}')" class="ml-auto text-red-600 text-sm">Remove</button>
+          </div>
+        </div>
+        <div class="font-semibold">₵${line.toFixed(2)}</div>
+      </div>`;
+  }).join('');
+  totalEl.textContent = total.toFixed(2);
+  if (goBtn) goBtn.disabled = false;
+}
+function toggleCart() {
+  $('cartDrawer').classList.toggle('open');
+  $('cartBackdrop').classList.toggle('open');
+  updateCartUI();
+}
+function goToPage(pageId, event, closeMobile) {
+  if (event && event.preventDefault) event.preventDefault();
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const map = {
+    menu: 'menuPage', checkout: 'checkoutPage',
+    orders: 'ordersPage', login: 'loginPage',
+  };
+  const el = $(map[pageId] || 'menuPage');
+  if (el) el.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  return false;
+}
+function goToCheckout() {
+  if (!cartItemsArray().length) { showToast('Your cart is empty'); return; }
+  if ($('cartDrawer').classList.contains('open')) toggleCart();
+  goToPage('checkout');
+}
+function toggleMobileMenu() {
+  const m = $('mobileMenu');
+  if (m) m.classList.toggle('hidden');
+}
+async function fetchMenuFromApi() {
+  const res = await fetch(API_BASE + '/api/menu');
+  if (!res.ok) { const e = new Error('menu api failed'); e.status = res.status; throw e; }
+  const data = await res.json();
+  return data?.items || data?.menuItems || data || [];
+}
+async function fetchMenuFromMealsJson() {
+  const res = await fetch('/meals.json');
+  if (!res.ok) throw new Error('meals.json failed');
+  const meals = await res.json();
+  const list = meals?.items || meals;
+  return (list || []).map((m, i) => ({
+    id: m?.id ?? (i + 1),
+    name: m?.name ?? `Item ${i + 1}`,
+    description: m?.description ?? '',
+    price: Number(m?.price ?? 0),
+    category: m?.category ?? 'Signature',
+    image: m?.image ?? '/IMG/menu_1.jpg',
+    available: m?.available ?? true,
+  }));
+}
+function renderMenu() {
+  const container = $('menuContainer');
+  const countEl = $('menuCount');
+
+  // If DOM is missing, stop early (prevents silent no-op)
+  if (!container || !countEl) return;
+
+  const items = Array.isArray(MENU_ITEMS_CACHE) ? MENU_ITEMS_CACHE : [];
+
+  // If no items, show error
+  if (!items.length) {
+    countEl.textContent = 'Unable to load menu. Please refresh.';
+    container.innerHTML = '';
+    return;
   }
 
-  function addToCart(mealId) {
-    if (mealId === null || mealId === undefined || mealId === '') return;
+  // Update UI: hide loading indicator
+  countEl.textContent = `Menu (${items.length} items)`;
 
-    const cart = getCart();
-    const id = String(mealId);
+  // Render all meals
+  container.innerHTML = items.map((meal) => {
+    const img = meal.image ? meal.image : '/IMG/menu_1.jpg';
+    const priceNum = Number(meal.price ?? 0);
+    const priceText = Number.isFinite(priceNum) ? priceNum.toFixed(2) : '0.00';
+    const mealId = meal.id ?? '';
 
-    cart[id] = Number(cart[id] || 0) + 1;
-    setCart(cart);
-
-    updateCartBadge();
-  }
-
-  // ===== RESTORE MENU LOADING ONLY =====
-  function renderMenuItems(items) {
-    const menuContainer = document.getElementById('menuContainer');
-    const skeleton = document.getElementById('menuSkeleton');
-    const menuCount = document.getElementById('menuCount');
-
-    if (!menuContainer || !menuCount) return;
-
-    // Clear skeleton + existing
-    if (skeleton) skeleton.innerHTML = '';
-    // Keep container clean:
-    menuContainer.innerHTML = '';
-
-    if (!items || !items.length) {
-      menuCount.textContent = 'No menu available';
-      return;
-    }
-
-    menuCount.textContent = `Menu (${items.length} items)`;
-
-    const frag = document.createDocumentFragment();
-
-    items.forEach(meal => {
-      const card = document.createElement('div');
-      card.className = 'menu-card overflow-hidden';
-
-      const img = meal.image ? meal.image : '/IMG/menu_1.jpg';
-      const price = (typeof meal.price === 'number') ? meal.price : Number(meal.price || 0);
-
-      card.innerHTML = `
-        <img src="${img}" alt="${meal.name || 'Meal'}">
+    return `
+      <div class="menu-card overflow-hidden">
+        <img src="${escapeHtml(img)}" alt="${escapeHtml(meal.name || 'Meal')}">
         <div class="p-5">
-          <h3 class="text-lg font-bold mb-1">${meal.name || 'Meal'}</h3>
-          <p class="text-gray-600 text-sm mb-3">${meal.description || ''}</p>
+          <h3 class="text-lg font-bold mb-1">${escapeHtml(meal.name || 'Meal')}</h3>
+          <p class="text-gray-600 text-sm mb-3">${escapeHtml(meal.description || '')}</p>
           <div class="flex items-center justify-between">
-            <span class="font-semibold text-primary">₵${price.toFixed(2)}</span>
-            <button class="btn-primary px-4 py-2 rounded-lg" type="button" onclick="addToCart && addToCart(${meal.id ?? ''})">
+            <span class="font-semibold text-primary">₵${priceText}</span>
+            <button
+              class="btn-primary px-4 py-2 rounded-lg"
+              type="button"
+              onclick="addToCart(${JSON.stringify(mealId)})"
+            >
               Add
             </button>
           </div>
         </div>
-      `;
-      frag.appendChild(card);
-    });
+      </div>
+    `;
+  }).join('');
+}
 
-    menuContainer.appendChild(frag);
+async function loadMyOrders() {
+  const listEl = $('ordersList');
+  if (!listEl) return;
+
+  const phone = (localStorage.getItem('customerPhone') || '').trim();
+  if (!phone) {
+    listEl.innerHTML = '<div class="text-gray-500">You have not placed any orders yet.</div>';
+    return;
   }
 
-  async function fetchMenuFromApi() {
-    const API_BASE = 'https://scantymeals-shop-1.onrender.com/api';
-    const res = await fetch(`${API_BASE}/menu`, { method: 'GET' });
+  listEl.innerHTML = '<div class="text-gray-500">Loading your orders...</div>';
+
+  try {
+    console.log('[MyOrders] phone=', phone);
+
+    const url = API_BASE + '/api/my-orders?phone=' + encodeURIComponent(phone);
+    console.log('[MyOrders] fetch=', url);
+
+    const res = await fetch(url);
+
+    // IMPORTANT: don’t swallow parse errors; show them in UI + console
+    const json = await res.json();
+
+    console.log('[MyOrders] status=', res.status, 'json=', json);
+
     if (!res.ok) {
-      // propagate status so we can decide whether to fallback
-      const err = new Error('menu api failed');
-      err.status = res.status;
-      throw err;
+      throw new Error('Failed to fetch orders: HTTP ' + res.status + ' msg=' + (json?.message || ''));
     }
-    const data = await res.json();
-    // Support both {items:[...]} and direct array
-    return data?.items || data?.menuItems || data || [];
+
+    // Backend may return {orders:[...]} OR directly an array
+    const orders = Array.isArray(json?.orders) ? json.orders : (Array.isArray(json) ? json : []);
+
+    const badge = (status) => {
+      const s = status || 'Confirmed';
+      const icons = {
+        Confirmed: '✅',
+        Preparing: '🍳',
+        Ready: '📦',
+        Delivered: '🚚',
+        Cancelled: '❌',
+      };
+      const icon = icons[s] || '✅';
+      return `<span class="font-semibold">${escapeHtml(s)} ${icon}</span>`;
+    };
+
+    listEl.innerHTML = orders.map((o) => {
+      const orderId = o?.id ?? '';
+      const dateText = o?.date ?? o?.created_at ?? '';
+      const statusText = o?.status ?? 'Confirmed';
+      const totalText = Number(o?.total ?? 0).toFixed(2);
+
+      const items = Array.isArray(o?.items) ? o.items : [];
+      const itemsHtml = items.length
+        ? '<ul class="text-sm text-gray-700 list-disc pl-5">' + items.map((it) => {
+            const name = escapeHtml(it?.name ?? 'Item');
+            const qty = Number(it?.quantity ?? 1);
+            return `<li>${name} × ${qty}</li>`;
+          }).join('') + '</ul>'
+        : '<div class="text-sm text-gray-500">No items</div>';
+
+      return `
+        <div class="bg-white rounded-lg p-4 shadow space-y-2">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="font-bold">Order ID: ${escapeHtml(orderId)}</div>
+              ${dateText ? `<div class="text-sm text-gray-500">Date: ${escapeHtml(dateText)}</div>` : ''}
+            </div>
+            ${badge(statusText)}
+          </div>
+
+          ${itemsHtml}
+
+          <div class="flex items-center justify-between pt-2 border-t">
+            <div class="text-gray-600 text-sm">Total</div>
+            <div class="font-bold">₵${escapeHtml(totalText)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    listEl.innerHTML = '<div class="text-gray-500">Unable to load your orders right now.</div>';
   }
+}
 
-  async function fetchMenuFromMealsJson() {
-    const res = await fetch('/meals.json', { method: 'GET' });
-    if (!res.ok) throw new Error('meals.json failed');
-    const meals = await res.json();
-
-    // meals.json structure might be {items:[...]} or raw array
-    const list = meals?.items || meals;
-
-    // Normalize into the same shape as /api/menu
-    return (list || []).map((meal, idx) => ({
-      id: meal?.id ?? (idx + 1),
-      name: meal?.name ?? `Item ${idx + 1}`,
-      description: meal?.description ?? '',
-      price: Number(meal?.price ?? 0),
-      category: meal?.category ?? 'Signature',
-      image: meal?.image ?? '/IMG/menu_1.jpg',
-      available: meal?.available ?? true
-    }));
+async function fetchMenu() {
+  const countEl = $('menuCount');
+  if (countEl) countEl.textContent = 'Loading menu items...';
+  try {
+    MENU_ITEMS_CACHE = await fetchMenuFromApi();
+    renderMenu();
+  } catch (e1) {
+    try { MENU_ITEMS_CACHE = await fetchMenuFromMealsJson(); }
+    catch (e2) {
+      if (countEl) countEl.textContent = 'Unable to load menu. Please refresh.';
+      return;
+    }
+    renderMenu();
   }
+}
 
-  async function fetchMenu() {
-    const menuCount = document.getElementById('menuCount');
-    if (menuCount) menuCount.textContent = 'Loading menu items...';
+window.addEventListener('DOMContentLoaded', () => {
+  $('footerYear').textContent = new Date().getFullYear();
+  setTimeout(() => $('splash')?.classList.add('hidden'), 700);
+  applyAuthUI();
+  updateCartCount();
+  updateCartUI();
+  fetchMenu();
+
+  const checkoutForm = $('checkoutForm');
+  checkoutForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const statusEl = $('orderStatus');
+    if (statusEl) {
+      statusEl.classList.remove('hidden');
+      statusEl.textContent = 'Placing order...';
+    }
 
     try {
-      const items = await fetchMenuFromApi();
-      renderMenuItems(items);
-      return;
-    } catch (e) {
-      // If the API failed with 404, fallback to meals.json.
-      // Also fallback for any non-OK to keep menu usable.
-      try {
-        const items = await fetchMenuFromMealsJson();
-        renderMenuItems(items);
+      const cartItems = cartItemsArray();
+      if (!cartItems.length) {
+        if (statusEl) { statusEl.textContent = 'Your cart is empty.'; statusEl.classList.remove('hidden'); }
         return;
-      } catch (e2) {
-        if (menuCount) menuCount.textContent = 'Unable to load menu';
+      }
+
+      const form = event.target;
+      const formData = new FormData(form);
+
+      const payload = {
+        customer_name: formData.get('customer_name'),
+        customer_phone: formData.get('customer_phone'),
+        customer_location: formData.get('customer_location'),
+        items: cartItems.map(i => ({
+          id: i.id,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity
+        })),
+      };
+
+      const res = await fetch(API_BASE + '/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = data?.message || 'Order failed. Please try again.';
+        if (statusEl) { statusEl.textContent = msg; statusEl.classList.remove('hidden'); }
+        return;
+      }
+
+      const orderId = data?.order?.id ?? data?.order_id ?? data?.orderId ?? data?.id ?? null;
+      const orderStatus = data?.order?.status ?? 'Confirmed';
+      const orderDate = data?.order?.date ?? '';
+      const orderCreatedAt = data?.order?.created_at ?? '';
+
+      if (statusEl) {
+        statusEl.classList.remove('hidden');
+        statusEl.innerHTML =
+          `🎉 Order placed successfully!` +
+          `${orderId ? `<div>Order ID: ${escapeHtml(orderId)}</div>` : ''}` +
+          `${orderDate ? `<div>Date: ${escapeHtml(orderDate)}</div>` : ''}` +
+          `${orderCreatedAt ? `<div>Time: ${escapeHtml(orderCreatedAt)}</div>` : ''}` +
+          `<div>Status: ${escapeHtml(orderStatus)} ✅</div>`;
+      }
+
+      // store identity for "My Orders"
+      const submittedName = String(formData.get('customer_name') || '').trim();
+      const submittedPhone = String(formData.get('customer_phone') || '').trim();
+
+      if (submittedName) localStorage.setItem('customerName', submittedName);
+      if (submittedPhone) localStorage.setItem('customerPhone', submittedPhone);
+
+      clearCart();
+      // refresh orders after successful checkout
+      loadMyOrders?.();
+      goToPage('orders');
+    } catch (err) {
+      if ($('orderStatus')) {
+        $('orderStatus').classList.remove('hidden');
+        $('orderStatus').textContent = 'Order failed. Please try again.';
       }
     }
-  }
-
-  // Call on page load
-  window.addEventListener('DOMContentLoaded', () => {
-    // Hide splash after initial render
-    const splash = document.getElementById('splash');
-    if (splash) setTimeout(() => { splash.classList.add('hidden'); }, 600);
-
-    // Ensure menu loads on init
-    fetchMenu();
   });
+});
+function applyAuthUI() {}
 </script>
 </body>
 </html>
