@@ -69,6 +69,8 @@ except Exception as e:
     users_db = []  # populated below once helpers exist
 
 
+
+
 # ============================================================================
 # PASSWORD HELPERS
 # ============================================================================
@@ -105,6 +107,66 @@ if not MONGODB_CONNECTED:
          "password": hash_password("customer123"),
          "name": "Demo Customer", "role": "customer"},
     ]
+
+
+def ensure_admin_user():
+    """
+    Ensure an admin user exists in MongoDB so /api/auth/admin-login can work
+    on production deployments.
+
+    Credentials come from env:
+      - ADMIN_EMAIL
+      - ADMIN_PASSWORD
+    Optional:
+      - ADMIN_ROLE (defaults to 'admin')
+    """
+    admin_email = (os.getenv('ADMIN_EMAIL') or 'admin@scanty.com').strip().lower()
+    admin_password = os.getenv('ADMIN_PASSWORD') or 'admin123'
+    admin_role = (os.getenv('ADMIN_ROLE') or 'admin').strip().lower() or 'admin'
+
+    if admin_role != 'admin':
+        # Enforce role gate semantics used by @admin_required
+        admin_role = 'admin'
+
+    # In-memory mode: just ensure demo admin exists
+    if not MONGODB_CONNECTED:
+        global users_db
+        if any(u.get('role') == 'admin' and (u.get('email') or '').lower() == admin_email for u in users_db):
+            return
+        users_db.insert(0, {
+            "_id": "admin_mem",
+            "email": admin_email,
+            "password": hash_password(admin_password),
+            "name": "Admin User",
+            "role": "admin",
+        })
+        return
+
+    # Mongo mode
+    existing = users_collection.find_one({"email": admin_email, "role": "admin"})
+    if existing:
+        return
+
+    # If there is any admin at all, do not overwrite; otherwise create a default admin.
+    any_admin = users_collection.find_one({"role": "admin"})
+    if any_admin:
+        return
+
+    new_admin = {
+        "email": admin_email,
+        "password": hash_password(admin_password),
+        "name": "Admin User",
+        "role": "admin",
+        "created_at": datetime.now().isoformat(),
+    }
+    users_collection.insert_one(new_admin)
+
+
+# Ensure admin exists at startup (so admin-login can work immediately)
+try:
+    ensure_admin_user()
+except Exception as e:
+    print(f"Warning: ensure_admin_user failed ({e})")
 
 
 # ============================================================================
@@ -295,6 +357,31 @@ def login():
     }), 200
 
 
+@app.route('/api/auth/admin-login', methods=['POST'])
+def admin_login():
+    data = request.get_json(silent=True) or {}
+    email = (data.get('email') or '').strip().lower()
+    password = data.get('password') or ''
+
+    if not email or not password:
+        return jsonify({"success": False, "message": "Email and password are required"}), 400
+
+    if MONGODB_CONNECTED:
+        user = users_collection.find_one({"email": email, "role": "admin"})
+    else:
+        user = next((u for u in users_db if (u.get('email') or '').strip().lower() == email and u.get('role') == 'admin'), None)
+
+    if not user or not user.get('password') or not verify_password(password, user['password']):
+        return jsonify({"success": False, "message": "Invalid admin credentials"}), 401
+
+    token = create_jwt_token(user['_id'], user.get('email', email), 'admin')
+    return jsonify({
+        "success": True,
+        "token": token,
+        "user": {"role": "admin"}
+    }), 200
+
+
 @app.route('/api/auth/google', methods=['POST'])
 def google_login():
     data = request.get_json(silent=True) or {}
@@ -471,17 +558,15 @@ def admin_page():
 @app.route('/admin-login')
 def admin_login_page():
     try:
-        idx_path = os.path.join(app.root_path, 'index.html')
-        with open(idx_path, 'r', encoding='utf-8') as f:
-            html = f.read()
-        if '<meta name="robots"' not in html:
-            html = html.replace('</head>', '  <meta name="robots" content="noindex,nofollow">\n</head>')
-        resp = make_response(html)
+        html_path = os.path.join(app.root_path, 'admin-login.html')
+        if not os.path.exists(html_path):
+            return send_from_directory('.', 'admin-login.html')
+        resp = make_response(send_from_directory(app.root_path, 'admin-login.html'))
         resp.headers['Content-Type'] = 'text/html; charset=utf-8'
         resp.headers['X-Robots-Tag'] = 'noindex, nofollow'
         return resp
     except Exception:
-        return send_from_directory('.', 'index.html')
+        return send_from_directory('.', 'admin-login.html')
 
 
 @app.route('/meals.json')

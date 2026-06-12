@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>ScantyMeals Admin Login</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#1a1a1a;background:#f7f7f7}
+    .card{max-width:520px;margin:40px auto;background:#fff;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:20px}
+    h1{color:#FF6B35;margin:0 0 12px}
+    label{display:block;font-weight:700;margin-top:14px;margin-bottom:6px}
+    input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;outline:none}
+    button{margin-top:16px;padding:10px 16px;border:none;border-radius:8px;background:#FF6B35;color:#fff;font-weight:800;cursor:pointer;width:100%}
+    .err{padding:12px 14px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;border-radius:8px;margin-top:14px;display:none}
+    .hint{font-size:12px;color:#666;margin-top:10px;line-height:1.4}
+    .toprow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    a{color:#FF6B35;text-decoration:underline}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="toprow">
+      <h1>Admin Login</h1>
+      <div><a href="/admin">Back to dashboard</a></div>
+    </div>
+
+    <form id="loginForm">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="username" required placeholder="admin@scanty.com" />
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" />
+
+      <button type="submit">Login</button>
+
+      <div id="err" class="err"></div>
+      <div class="hint">
+        If this is the first deployment, ensure the backend is configured with ADMIN_EMAIL and ADMIN_PASSWORD env vars.
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const API_BASE = (location.hostname.endsWith('onrender.com') || location.hostname === 'localhost')
+      ? '' // same-origin
+      : 'https://scantymeals-shop-1.onrender.com';
+
+    const STORAGE_KEYS = ['token','user','admin_token'];
+
+    function clearAuthStorage() {
+      STORAGE_KEYS.forEach(k => {
+        try { localStorage.removeItem(k); } catch (_) {}
+      });
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      const password = document.getElementById('password').value;
+
+      const errEl = document.getElementById('err');
+      errEl.style.display = 'none';
+      errEl.textContent = '';
+
+      clearAuthStorage();
+
+      try {
+        const res = await fetch(API_BASE + '/api/auth/admin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || !data.success) {
+          const msg = data?.message || ('Admin login failed (HTTP ' + res.status + ')');
+          errEl.textContent = msg;
+          errEl.style.display = 'block';
+          return;
+        }
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user || { role: 'admin' }));
+        window.location.href = '/admin';
+      } catch (ex) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
