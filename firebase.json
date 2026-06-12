@@ -2,23 +2,28 @@
   "hosting": {
     "public": ".",
     "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**",
-      "app.py",
-      "requirements.txt",
-      "Procfile",
-      "**/*.md",
-      "venv/**",
-      "__pycache__/**"
+       "firebase.json",
+  "**/.*",
+  "**/node_modules/**",
+  "app.py",
+  "requirements.txt",
+  "Procfile",
+  "**/*.md",
+  "venv/**",
+  ".venv/**",
+  "__pycache__/**",
+  ".vscode/**",
+  "*.log",
+  "*.err",
+  "Dockerfile",
+  "dl.py"
     ],
     "cleanUrls": true,
     "trailingSlash": false,
     "rewrites": [
-      { "source": "/", "destination": "/index.html" },
-      { "source": "/admin", "destination": "/admin.html" },
-      { "source": "/admin-login", "destination": "/admin-login.html" },
-      { "source": "**", "destination": "/index.html" }
+   { "source": "/", "destination": "/index.html" },
+   { "source": "/admin", "destination": "/admin.html" },
+   { "source": "**", "destination": "/index.html" }
     ],
     "headers": [
       {

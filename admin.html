@@ -72,7 +72,7 @@
       clearAuthStorage();
       token = null;
       headers = {};
-      window.location.href = '/admin-login';
+      // window.location.href = '/admin-login';
     }
 
     function showUnauthorized() {
@@ -200,7 +200,7 @@
     (function init() {
       token = getToken();
       if (!token) {
-        window.location.href = '/admin-login';
+        // window.location.href = '/admin-login';
         return;
       }
       headers = {
