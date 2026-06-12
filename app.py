@@ -549,7 +549,10 @@ def admin_page():
     """
     admin_path = os.path.join(app.root_path, 'admin.html')
     if not os.path.exists(admin_path):
-        return jsonify({"success": False, "message": "Admin UI not available"}), 500
+        return jsonify({
+            "success": False,
+            "message": "Admin UI not available",
+        }), 500
     resp = send_from_directory(app.root_path, 'admin.html')
     resp.headers['X-Robots-Tag'] = 'noindex, nofollow'
     return resp
