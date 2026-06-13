@@ -315,7 +315,7 @@ const API_BASE = 'https://scantymeals-shop-1.onrender.com'; // Render backend
 (async function pingBackend() {
   try {
     const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 8000);
+    const tid = setTimeout(() => ctrl.abort(), 45000);
     const r = await fetch(API_BASE + '/api/health', { signal: ctrl.signal });
     clearTimeout(tid);
     console.log('[Ping] backend alive, status:', r.status);
@@ -672,6 +672,10 @@ window.addEventListener('DOMContentLoaded', () => {
       };
 
       console.log('[PlaceOrder] payloadSent:', payload);
+      console.log('[PlaceOrder] ABOUT TO FETCH');
+      console.log('[PlaceOrder] API_BASE =', API_BASE);
+      console.log('[PlaceOrder] payload =', payload);
+      alert('ABOUT TO SEND ORDER');
 
       const res = await fetch(API_BASE + '/api/orders', {
         method: 'POST',
