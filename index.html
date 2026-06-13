@@ -310,6 +310,8 @@
 <script>
 
   // Wake up Render backend on page load (prevents cold-start on first order)
+const API_BASE = 'https://scantymeals-shop-1.onrender.com'; // Render backend
+
 (async function pingBackend() {
   try {
     const ctrl = new AbortController();
@@ -322,27 +324,6 @@
   }
 })();
 
-const orderController = new AbortController();
-const orderTimeout = setTimeout(() => orderController.abort(), 15000); // 15s
-
-try {
-  const res = await fetch(API_BASE + '/api/orders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-    signal: orderController.signal,
-  });
-  clearTimeout(orderTimeout);
-  // ... rest of handler
-} catch (err) {
-  clearTimeout(orderTimeout);
-  const isTimeout = err.name === 'AbortError';
-  const errMsg = isTimeout ? 'Request timed out — server may be starting up, try again in 30s' : err.message;
-  $('orderStatus').textContent = errMsg;
-  console.error('[PlaceOrder] error:', err.name, err.message);
-}
-// (rest of file unchanged - identical to index (9).html)
-const API_BASE = 'https://scantymeals-shop-1.onrender.com'; // Render backend
 const CART_KEY = 'scanty_cart_v2';      // { [id]: { id, name, price, image, quantity } }
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
@@ -690,17 +671,58 @@ window.addEventListener('DOMContentLoaded', () => {
         })),
       };
 
+      console.log('[PlaceOrder] payloadSent:', payload);
+
       const res = await fetch(API_BASE + '/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const responseText = await res.text().catch(() => '');
+      const resHeaders = {};
+      try {
+        res.headers.forEach((v, k) => { resHeaders[k] = v; });
+      } catch (_) {}
+
+      let data = {};
+      let jsonParseError = null;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        jsonParseError = e?.message || String(e);
+      }
+
+      console.log('[PlaceOrder] response:', {
+        ok: res.ok,
+        status: res.status,
+        statusText: res.statusText,
+        headers: resHeaders,
+        responseText,
+        parsedJson: data,
+        jsonParseError,
+      });
+
       if (!res.ok) {
-       const msg = `HTTP ${res.status}: ${data?.message || 'Unknown error'}`;
-       console.log('Order failed:', res.status, data);
-        if (statusEl) { statusEl.textContent = msg; statusEl.classList.remove('hidden'); }
+        const serverMessage = data?.message || data?.error || null;
+        const msg =
+          `Order failed (HTTP ${res.status}). ` +
+          (serverMessage ? `Message: ${serverMessage}. ` : '') +
+          `Response: ${String(responseText || '').slice(0, 500) || 'Unknown error'}`;
+
+        console.error('[PlaceOrder] failed', {
+          status: res.status,
+          statusText: res.statusText,
+          responseText,
+          json: data,
+          payloadSent: payload,
+          jsonParseError,
+        });
+
+        if (statusEl) {
+          statusEl.textContent = msg;
+          statusEl.classList.remove('hidden');
+        }
         return;
       }
 

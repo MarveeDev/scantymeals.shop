@@ -646,8 +646,42 @@ def _coerce_items(raw):
 @app.route('/api/orders', methods=['POST'])
 def create_order():
     """Public — customers may place orders without an account."""
-    data = request.get_json(silent=True) or {}
+    # TEMP DEBUG: log request details to pinpoint mobile-only failures
+    try:
+        raw_body = request.get_data(as_text=True)
+    except Exception:
+        raw_body = '<unavailable>'
+    app.logger.info("POST /api/orders | Headers: %s", dict(request.headers))
+    app.logger.info("POST /api/orders | Raw body: %s", raw_body)
 
+    data = request.get_json(silent=True) or {}
+    app.logger.info("POST /api/orders | Parsed JSON keys: %s", list(data.keys()) if isinstance(data, dict) else type(data))
+
+    customer_name = (data.get('customer_name') or data.get('customerName') or 'Guest').strip()
+    customer_phone = (data.get('customer_phone') or data.get('phone_number')
+                      or data.get('phoneNumber') or data.get('customerPhone') or '').strip()
+    customer_location = (data.get('customer_location') or data.get('delivery_location')
+                         or data.get('deliveryLocation') or data.get('customerLocation') or '').strip()
+
+    items_raw = data.get('items') or data.get('cartItems') or []
+    app.logger.info("POST /api/orders | items_raw type=%s len=%s",
+                     type(items_raw).__name__,
+                     len(items_raw) if isinstance(items_raw, list) else 'n/a')
+
+    items = _coerce_items(items_raw)
+    app.logger.info("POST /api/orders | coerced items=%s", items)
+
+    # Validation failures (temp debug)
+    if not items:
+        app.logger.warning("POST /api/orders | Validation failed: Cart is empty")
+        return jsonify({"success": False, "message": "Cart is empty"}), 400
+
+    # Always compute total server-side; ignore any client-supplied total
+    total = round(sum(it['price'] * it['quantity'] for it in items), 2)
+    app.logger.info("POST /api/orders | Computed total=%s name=%s phone=%s location=%s",
+                     total, customer_name, customer_phone, customer_location)
+
+    # from here on, original code continues but without duplicating assignments
     if MONGODB_CONNECTED:
         counter_doc = order_counter_collection.find_one_and_update(
             {"_id": "order_id"},
@@ -687,13 +721,23 @@ def create_order():
 
     if MONGODB_CONNECTED:
         try:
+            app.logger.info("POST /api/orders | Inserting order id=%s total=%s", order["id"], order["total"])
             result = orders_collection.insert_one(order)
             order["_id"] = str(result.inserted_id)
-        except Exception:
-            app.logger.exception("Error inserting order into MongoDB")
+            app.logger.info("POST /api/orders | Insert success inserted_id=%s", order["_id"])
+        except Exception as e:
+            app.logger.exception(
+                "POST /api/orders | Insert failed id=%s total=%s err=%s",
+                order.get("id"), order.get("total"), repr(e)
+            )
             return jsonify({"success": False, "message": "Failed to save order"}), 500
     else:
-        orders_db.append(order)
+        try:
+            orders_db.append(order)
+            app.logger.info("POST /api/orders | Stored in-memory order id=%s", order["id"])
+        except Exception as e:
+            app.logger.exception("POST /api/orders | In-memory store failed err=%s", repr(e))
+            return jsonify({"success": False, "message": "Failed to save order"}), 500
 
     return jsonify({
         "success": True,
