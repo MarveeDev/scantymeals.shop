@@ -323,7 +323,7 @@
 })();
 
 const orderController = new AbortController();
-const orderTimeout = setTimeout(() => orderController.abort(), 15000); // 15s
+const orderTimeout = setTimeout(() => orderController.abort(), 60000); // 60s
 
 try {
   const res = await fetch(API_BASE + '/api/orders', {
