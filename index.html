@@ -308,6 +308,39 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>
+
+  // Wake up Render backend on page load (prevents cold-start on first order)
+(async function pingBackend() {
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 8000);
+    const r = await fetch(API_BASE + '/api/health', { signal: ctrl.signal });
+    clearTimeout(tid);
+    console.log('[Ping] backend alive, status:', r.status);
+  } catch (e) {
+    console.warn('[Ping] backend cold/unreachable:', e.message);
+  }
+})();
+
+const orderController = new AbortController();
+const orderTimeout = setTimeout(() => orderController.abort(), 15000); // 15s
+
+try {
+  const res = await fetch(API_BASE + '/api/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: orderController.signal,
+  });
+  clearTimeout(orderTimeout);
+  // ... rest of handler
+} catch (err) {
+  clearTimeout(orderTimeout);
+  const isTimeout = err.name === 'AbortError';
+  const errMsg = isTimeout ? 'Request timed out — server may be starting up, try again in 30s' : err.message;
+  $('orderStatus').textContent = errMsg;
+  console.error('[PlaceOrder] error:', err.name, err.message);
+}
 // (rest of file unchanged - identical to index (9).html)
 const API_BASE = 'https://scantymeals-shop-1.onrender.com'; // Render backend
 const CART_KEY = 'scanty_cart_v2';      // { [id]: { id, name, price, image, quantity } }
@@ -697,11 +730,18 @@ window.addEventListener('DOMContentLoaded', () => {
       loadMyOrders?.();
       goToPage('orders');
     } catch (err) {
-      if ($('orderStatus')) {
-        $('orderStatus').classList.remove('hidden');
-        $('orderStatus').textContent = 'Order failed. Please try again.';
-      }
-    }
+  // LOG THE ACTUAL ERROR — critical for mobile debugging
+  const errMsg = err?.message || String(err);
+  console.error('[PlaceOrder] fetch failed:', errMsg, err);
+  
+  // Show the real error on screen (remove before production)
+  if ($('orderStatus')) {
+    $('orderStatus').classList.remove('hidden');
+    $('orderStatus').textContent = 'Order failed: ' + errMsg;
+  }
+}
+      
+    
   });
 });
 function applyAuthUI() {}
