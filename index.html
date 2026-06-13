@@ -698,7 +698,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const msg = data?.message || 'Order failed. Please try again.';
+       const msg = `HTTP ${res.status}: ${data?.message || 'Unknown error'}`;
+       console.log('Order failed:', res.status, data);
         if (statusEl) { statusEl.textContent = msg; statusEl.classList.remove('hidden'); }
         return;
       }

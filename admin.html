@@ -132,23 +132,38 @@
     function renderOrders(orders) {
       const container = document.getElementById('ordersContainer');
       if (!orders || !orders.length) { container.textContent = 'No orders'; return; }
+
+      function formatItemsOrdered(items) {
+        if (!Array.isArray(items) || items.length === 0) return 'No items';
+        return items.map(it => {
+          const name = escapeHtml(it && it.name ? it.name : 'Unknown item');
+          const qty = Number(it && typeof it.quantity !== 'undefined' ? it.quantity : 0);
+          return `${name} × ${qty}`;
+        }).join(', ');
+      }
+
       const rows = orders.map(o => {
         const id = escapeHtml(o.id);
         const total = (Number(o.total) || 0).toFixed(2);
         const statusOpts = ['Confirmed','Preparing','Ready','Delivered','Cancelled']
           .map(s => `<option ${o.status===s?'selected':''}>${s}</option>`).join('');
+
+        const itemsOrdered = formatItemsOrdered(o.items);
+
         return `<tr>
           <td>${id}</td>
           <td>${escapeHtml(o.customer_name)}</td>
           <td>${escapeHtml(o.customer_phone || '')}</td>
+          <td>${itemsOrdered}</td>
           <td>₵${total}</td>
           <td id="status-${id}">${escapeHtml(o.status)}</td>
           <td><select onchange="updateStatus('${id}', this.value)">${statusOpts}</select></td>
         </tr>`;
       }).join('');
+
       container.innerHTML = `
         <table>
-          <thead><tr><th>ID</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>ID</th><th>Customer</th><th>Phone</th><th>Items Ordered</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
     }
