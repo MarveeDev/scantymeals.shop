@@ -562,6 +562,10 @@ def admin_page():
         return jsonify({
             "success": False,
             "message": "Admin UI not available",
+            "root_path": app.root_path,
+            "root_path": app.root_path,
+            "cwd": os.getcwd(),
+            "files": os.listdir(app.root_path)
         }), 500
     resp = send_from_directory(app.root_path, 'admin.html')
     resp.headers['X-Robots-Tag'] = 'noindex, nofollow'
