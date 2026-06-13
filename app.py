@@ -642,7 +642,16 @@ def _coerce_items(raw):
             continue
     return items
 
+@app.route('/api/orders', methods=['POST'])
+def place_order():
+    print("=== POST /api/orders CALLED ===")
+    print("Headers:", dict(request.headers))
+    print("Raw body:", request.get_data(as_text=True))
 
+    data = request.get_json(silent=True)
+    print("Parsed JSON:", data)
+
+    # rest of your code...
 @app.route('/api/orders', methods=['POST'])
 def create_order():
     """Public — customers may place orders without an account."""
