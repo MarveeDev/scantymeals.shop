@@ -20,7 +20,7 @@ app = Flask(__name__, static_folder='.')
 # CORS — restrict to known origins in production
 _origins_env = os.getenv(
      'ADMIN_ORIGINS',
-    'https://scanty-meals-95d3f.web.app,http://localhost:5000,http://127.0.0.1:5000,https://scanty-meals-95d3f.firebaseapp.com,'
+    'https://scantymeals.shop,https://www.scantymeals.shop,https://scanty-meals-95d3f.web.app,http://localhost:5000,http://127.0.0.1:5000,https://scanty-meals-95d3f.firebaseapp.com,'
 )
 ALLOWED_ORIGINS = [o.strip() for o in _origins_env.split(',') if o.strip()]
 CORS(
