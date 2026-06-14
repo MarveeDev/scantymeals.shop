@@ -563,7 +563,6 @@ def admin_page():
             "success": False,
             "message": "Admin UI not available",
             "root_path": app.root_path,
-            "root_path": app.root_path,
             "cwd": os.getcwd(),
             "files": os.listdir(app.root_path)
         }), 500
@@ -643,122 +642,128 @@ def _coerce_items(raw):
     return items
 
 @app.route('/api/orders', methods=['POST'])
-def place_order():
-    print("=== POST /api/orders CALLED ===")
-    print("Headers:", dict(request.headers))
-    print("Raw body:", request.get_data(as_text=True))
-
-    data = request.get_json(silent=True)
-    print("Parsed JSON:", data)
-
-    # rest of your code...
-@app.route('/api/orders', methods=['POST'])
 def create_order():
     """Public — customers may place orders without an account."""
-    # TEMP DEBUG: log request details to pinpoint mobile-only failures
     try:
-        raw_body = request.get_data(as_text=True)
-    except Exception:
-        raw_body = '<unavailable>'
-    app.logger.info("POST /api/orders | Headers: %s", dict(request.headers))
-    app.logger.info("POST /api/orders | Raw body: %s", raw_body)
+        # TEMP DEBUG: log request details to pinpoint mobile-only failures
+        raw_body = None
+        try:
+            raw_body = request.get_data(as_text=True)
+        except Exception:
+            raw_body = '<unavailable>'
 
-    data = request.get_json(silent=True) or {}
-    app.logger.info("POST /api/orders | Parsed JSON keys: %s", list(data.keys()) if isinstance(data, dict) else type(data))
+        app.logger.info("POST /api/orders | Headers: %s", dict(request.headers))
+        app.logger.info("POST /api/orders | Raw body: %s", raw_body)
 
-    customer_name = (data.get('customer_name') or data.get('customerName') or 'Guest').strip()
-    customer_phone = (data.get('customer_phone') or data.get('phone_number')
-                      or data.get('phoneNumber') or data.get('customerPhone') or '').strip()
-    customer_location = (data.get('customer_location') or data.get('delivery_location')
-                         or data.get('deliveryLocation') or data.get('customerLocation') or '').strip()
-
-    items_raw = data.get('items') or data.get('cartItems') or []
-    app.logger.info("POST /api/orders | items_raw type=%s len=%s",
-                     type(items_raw).__name__,
-                     len(items_raw) if isinstance(items_raw, list) else 'n/a')
-
-    items = _coerce_items(items_raw)
-    app.logger.info("POST /api/orders | coerced items=%s", items)
-
-    # Validation failures (temp debug)
-    if not items:
-        app.logger.warning("POST /api/orders | Validation failed: Cart is empty")
-        return jsonify({"success": False, "message": "Cart is empty"}), 400
-
-    # Always compute total server-side; ignore any client-supplied total
-    total = round(sum(it['price'] * it['quantity'] for it in items), 2)
-    app.logger.info("POST /api/orders | Computed total=%s name=%s phone=%s location=%s",
-                     total, customer_name, customer_phone, customer_location)
-
-    # from here on, original code continues but without duplicating assignments
-    if MONGODB_CONNECTED:
-        counter_doc = order_counter_collection.find_one_and_update(
-            {"_id": "order_id"},
-            {"$inc": {"seq": 1}},
-            upsert=True,
-            return_document=ReturnDocument.AFTER,
+        data = request.get_json(silent=True) or {}
+        app.logger.info(
+            "POST /api/orders | Parsed JSON keys: %s",
+            list(data.keys()) if isinstance(data, dict) else type(data),
         )
-        order_number = counter_doc["seq"]
-    else:
-        order_number = order_counter[0]
-        order_counter[0] += 1
 
-    customer_name = (data.get('customer_name') or data.get('customerName') or 'Guest').strip()
-    customer_phone = (data.get('customer_phone') or data.get('phone_number')
-                      or data.get('phoneNumber') or data.get('customerPhone') or '').strip()
-    customer_location = (data.get('customer_location') or data.get('delivery_location')
-                         or data.get('deliveryLocation') or data.get('customerLocation') or '').strip()
+        customer_name = (data.get('customer_name') or data.get('customerName') or 'Guest').strip()
+        customer_phone = (data.get('customer_phone') or data.get('phone_number')
+                           or data.get('phoneNumber') or data.get('customerPhone') or '').strip()
+        customer_location = (data.get('customer_location') or data.get('delivery_location')
+                              or data.get('deliveryLocation') or data.get('customerLocation') or '').strip()
 
-    items = _coerce_items(data.get('items') or data.get('cartItems') or [])
-    if not items:
-        return jsonify({"success": False, "message": "Cart is empty"}), 400
+        items_raw = data.get('items') or data.get('cartItems') or []
+        app.logger.info(
+            "POST /api/orders | items_raw type=%s len=%s",
+            type(items_raw).__name__,
+            len(items_raw) if isinstance(items_raw, list) else 'n/a',
+        )
 
-    # Always compute total server-side; ignore any client-supplied total
-    total = round(sum(it['price'] * it['quantity'] for it in items), 2)
+        items = _coerce_items(items_raw)
+        app.logger.info("POST /api/orders | coerced items=%s", items)
 
-    order = {
-        "id": f"SCM-{order_number:04d}",
-        "customer_name": customer_name,
-        "customer_phone": customer_phone,
-        "customer_location": customer_location,
-        "items": items,
-        "total": total,
-        "status": "Confirmed",
-        "timestamp": datetime.now().isoformat(),
-        "date": date.today().isoformat(),
-    }
+        if not items:
+            app.logger.warning("POST /api/orders | Validation failed: Cart is empty")
+            return jsonify({"success": False, "message": "Cart is empty"}), 400
 
-    if MONGODB_CONNECTED:
-        try:
-            app.logger.info("POST /api/orders | Inserting order id=%s total=%s", order["id"], order["total"])
-            result = orders_collection.insert_one(order)
-            order["_id"] = str(result.inserted_id)
-            app.logger.info("POST /api/orders | Insert success inserted_id=%s", order["_id"])
-        except Exception as e:
-            app.logger.exception(
-                "POST /api/orders | Insert failed id=%s total=%s err=%s",
-                order.get("id"), order.get("total"), repr(e)
+        total = round(sum(it['price'] * it['quantity'] for it in items), 2)
+        app.logger.info(
+            "POST /api/orders | Computed total=%s name=%s phone=%s location=%s",
+            total, customer_name, customer_phone, customer_location
+        )
+
+        if MONGODB_CONNECTED:
+            counter_doc = order_counter_collection.find_one_and_update(
+                {"_id": "order_id"},
+                {"$inc": {"seq": 1}},
+                upsert=True,
+                return_document=ReturnDocument.AFTER,
             )
-            return jsonify({"success": False, "message": "Failed to save order"}), 500
-    else:
-        try:
-            orders_db.append(order)
-            app.logger.info("POST /api/orders | Stored in-memory order id=%s", order["id"])
-        except Exception as e:
-            app.logger.exception("POST /api/orders | In-memory store failed err=%s", repr(e))
-            return jsonify({"success": False, "message": "Failed to save order"}), 500
+            if not counter_doc or "seq" not in counter_doc:
+                app.logger.error(
+                    "POST /api/orders | counter_doc missing/invalid: %s",
+                    counter_doc
+                )
+                return jsonify({"success": False, "message": "Order counter error"}), 500
+            order_number = counter_doc["seq"]
+        else:
+            order_number = order_counter[0]
+            order_counter[0] += 1
 
-    return jsonify({
-        "success": True,
-        "message": "Order placed successfully",
-        "order": {
-            "id": order["id"],
-            "total": order["total"],
-            "status": order["status"],
-            "created_at": order.get("timestamp"),
-            "date": order.get("date"),
-        },
-    }), 201
+        order = {
+            "id": f"SCM-{order_number:04d}",
+            "customer_name": customer_name,
+            "customer_phone": customer_phone,
+            "customer_location": customer_location,
+            "items": items,
+            "total": total,
+            "status": "Confirmed",
+            "timestamp": datetime.now().isoformat(),
+            "date": date.today().isoformat(),
+        }
+
+        if MONGODB_CONNECTED:
+            try:
+                app.logger.info(
+                    "POST /api/orders | Inserting order id=%s total=%s",
+                    order["id"], order["total"]
+                )
+                result = orders_collection.insert_one(order)
+                order["_id"] = str(result.inserted_id)
+                app.logger.info(
+                    "POST /api/orders | Insert success inserted_id=%s",
+                    order["_id"]
+                )
+            except Exception as e:
+                app.logger.exception(
+                    "POST /api/orders | Insert failed id=%s total=%s err=%s",
+                    order.get("id"), order.get("total"), repr(e)
+                )
+                return jsonify({"success": False, "message": "Failed to save order"}), 500
+        else:
+            try:
+                orders_db.append(order)
+                app.logger.info(
+                    "POST /api/orders | Stored in-memory order id=%s",
+                    order["id"]
+                )
+            except Exception as e:
+                app.logger.exception(
+                    "POST /api/orders | In-memory store failed err=%s",
+                    repr(e)
+                )
+                return jsonify({"success": False, "message": "Failed to save order"}), 500
+
+        return jsonify({
+            "success": True,
+            "message": "Order placed successfully",
+            "order": {
+                "id": order["id"],
+                "total": order["total"],
+                "status": order["status"],
+                "created_at": order.get("timestamp"),
+                "date": order.get("date"),
+            },
+        }), 201
+
+    except Exception as e:
+        app.logger.exception("POST /api/orders | Unhandled exception: %s", repr(e))
+        return jsonify({"success": False, "message": "Failed to place order"}), 500
 
 
 @app.route('/api/orders', methods=['GET'])
