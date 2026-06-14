@@ -675,7 +675,7 @@ window.addEventListener('DOMContentLoaded', () => {
       console.log('[PlaceOrder] ABOUT TO FETCH');
       console.log('[PlaceOrder] API_BASE =', API_BASE);
       console.log('[PlaceOrder] payload =', payload);
-      alert('ABOUT TO SEND ORDER');
+      
 
       const res = await fetch(API_BASE + '/api/orders', {
         method: 'POST',
