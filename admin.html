@@ -33,8 +33,9 @@
   <div id="adminContent" style="display:none">
     <div id="stats">
       <div class="stat">Total Orders: <span id="totalOrders">-</span></div>
+      <div class="stat">Total Revenue: <span id="revenue">-</span></div>
       <div class="stat">Today's Orders: <span id="todayOrders">-</span></div>
-      <div class="stat">Revenue: <span id="revenue">-</span></div>
+      <div class="stat">Today's Revenue: <span id="todayRevenue">-</span></div>
     </div>
 
     <h2>Orders</h2>
@@ -197,8 +198,20 @@
 
       if (ord && Array.isArray(ord.orders)) {
         const today = new Date().toISOString().slice(0, 10);
-        const todays = ord.orders.filter(o => o.date === today);
+        const todays = ord.orders.filter(o => {
+          let oDate = '';
+          if (o.date) {
+            oDate = o.date;
+          } else if (o.timestamp) {
+            oDate = o.timestamp.slice(0, 10);
+          }
+          return oDate === today;
+        });
+
+        const todayRevenue = todays.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
         document.getElementById('todayOrders').textContent = todays.length;
+        document.getElementById('todayRevenue').textContent = '₵' + todayRevenue.toFixed(2);
         renderOrders([...ord.orders].reverse());
 
         const map = new Map();
