@@ -11,6 +11,7 @@ from bson.objectid import ObjectId
 import jwt
 import bcrypt
 
+
 # ============================================================================
 # CONFIG
 # ============================================================================
@@ -771,15 +772,59 @@ def create_order():
 def get_orders():
     """Admin-only: lists all orders (contains PII)."""
     date_filter = request.args.get('date')
+    
+    from datetime import datetime
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+
     if MONGODB_CONNECTED:
         query = {"date": date_filter} if date_filter else {}
         orders = list(orders_collection.find(query))
         for o in orders:
             o["_id"] = str(o["_id"])
+
+        # Stats queries
+        all_orders = list(orders_collection.find({}))
+        total_orders = len(all_orders)
+        total_revenue = sum(_safe_total(o) for o in all_orders)
+
+        today_orders_list = list(orders_collection.find({
+            "$or": [
+                {"date": today},
+                {"timestamp": {"$regex": f"^{today}"}}
+            ]
+        }))
+        today_orders = len(today_orders_list)
+        today_revenue = sum(_safe_total(o) for o in today_orders_list)
     else:
         orders = ([o for o in orders_db if o['date'] == date_filter]
                   if date_filter else list(orders_db))
-    return jsonify({"success": True, "orders": orders})
+
+        # Stats fallback
+        total_orders = len(orders_db)
+        total_revenue = sum(_safe_total(o) for o in orders_db)
+
+        today_orders_list = []
+        for o in orders_db:
+            o_date = o.get("date", "")
+            o_timestamp = o.get("timestamp", "")
+            if o_date == today or (o_timestamp and o_timestamp.startswith(today)):
+                today_orders_list.append(o)
+
+        today_orders = len(today_orders_list)
+        today_revenue = sum(_safe_total(o) for o in today_orders_list)
+
+    stats = {
+        "totalOrders": total_orders,
+        "totalRevenue": round(total_revenue, 2),
+        "todayOrders": today_orders,
+        "todayRevenue": round(today_revenue, 2)
+    }
+
+    return jsonify({
+        "success": True,
+        "orders": orders,
+        "stats": stats
+    })
 
 
 @app.route('/api/my-orders', methods=['GET'])
