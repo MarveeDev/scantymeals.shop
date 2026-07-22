@@ -257,7 +257,7 @@
 
     async function fetchNotifications() {
       try {
-        const res = await api('/api/notifications');
+        const res = await api('/api/notifications?audience=admin');
         if (res.ok) {
           const data = await res.json();
           notifications = data.notifications || [];
@@ -287,8 +287,22 @@
         <div class="notif-item ${n.read ? '' : 'unread'}" onclick="markAsRead('${n._id || n.id}')">
           <div style="font-size:12px;color:#888">${new Date(n.created_at).toLocaleString()}</div>
           <div>${escapeHtml(n.message)}</div>
+          <div style="margin-top: 5px; text-align: right;">
+            <button onclick="deleteNotification('${n._id || n.id}'); event.stopPropagation()" style="font-size:11px; background:none; border:none; color:#d9534f; cursor:pointer;">Delete</button>
+          </div>
         </div>
       `).join('');
+    }
+
+    async function deleteNotification(id) {
+      if (!confirm("Delete this notification?")) return;
+      try {
+        const res = await api('/api/notifications/' + id, { method: 'DELETE' });
+        if (res.ok) {
+          notifications = notifications.filter(x => (x._id || x.id) !== id);
+          renderNotifications();
+        }
+      } catch(e) { console.error(e); }
     }
 
     async function markAsRead(id) {

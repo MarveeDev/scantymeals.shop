@@ -385,7 +385,7 @@ async function fetchCustomerNotifications() {
   if (btn) btn.style.display = 'block';
 
   try {
-    const res = await fetch(API_BASE + '/api/notifications?customer_phone=' + encodeURIComponent(phone));
+    const res = await fetch(API_BASE + '/api/notifications?audience=customer:' + encodeURIComponent(phone));
     if (res.ok) {
       const data = await res.json();
       customerNotifications = data.notifications || [];
@@ -418,18 +418,32 @@ function updateNotifUI() {
     <div class="notif-item ${n.read ? '' : 'unread'}" onclick="markNotifRead('${n._id || n.id}')">
       <div class="text-xs text-gray-500">${new Date(n.created_at).toLocaleString()}</div>
       <div class="mt-1">${escapeHtml(n.message)}</div>
+      <div class="mt-2 text-right">
+        <button onclick="deleteCustomerNotif('${n._id || n.id}'); event.stopPropagation()" class="text-xs text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer">Delete</button>
+      </div>
     </div>
   `).join('');
 }
 
-async function markNotifRead(id) {
+window.deleteCustomerNotif = async function(id) {
+  if (!confirm("Delete this notification?")) return;
+  try {
+    const res = await fetch(API_BASE + '/api/notifications/' + id, { method: 'DELETE' });
+    if (res.ok) {
+      customerNotifications = customerNotifications.filter(x => (x._id || x.id) !== id);
+      updateNotifUI();
+    }
+  } catch(e) { console.error(e); }
+};
+
+window.markNotifRead = async function(id) {
   const n = customerNotifications.find(x => (x._id || x.id) === id);
   if (n && !n.read) {
     n.read = true;
     updateNotifUI();
     try { await fetch(API_BASE + '/api/notifications/' + id + '/read', { method: 'PUT' }); } catch(e){}
   }
-}
+};
 
 async function markAllNotifsRead() {
   const unread = customerNotifications.filter(n => !n.read);
