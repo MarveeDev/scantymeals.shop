@@ -124,7 +124,7 @@
         width: min(1160px, calc(100% - 3rem));
       }
     }
-    
+
     /* Splash Screen */
     #splash {
       position: fixed; inset: 0; z-index: 9999;
@@ -143,7 +143,7 @@
       text-shadow: 0 4px 20px rgba(0,0,0,0.3);
       animation: pulse 2s ease-in-out infinite;
     }
-    
+
     .splash-emoji {
       font-size: 5rem;
       margin-bottom: 1rem;
@@ -369,7 +369,22 @@
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: #f1f1f1; }
     ::-webkit-scrollbar-thumb { background: #FF6B35; border-radius: 4px; }
+<<<<<<< Updated upstream
+    /* Notification Modal styles */
+    #notifModal .modal-box {
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+    #notifItems {
+      overflow-y: auto;
+      flex: 1;
+    }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.js"></script>
+=======
+  </style>
+>>>>>>> Stashed changes
 </head>
 
 <body class="bg-light text-dark">
@@ -410,6 +425,18 @@
           <p id="userName" style="font-weight: 600; font-size: 14px; margin: 0;"></p>
           <p id="userRole" style="font-size: 12px; color: #FF6B35; margin: 0;"></p>
         </div>
+<<<<<<< Updated upstream
+
+        <!-- Notification Bell -->
+        <button onclick="toggleNotifications()" class="relative p-2 mr-2" id="notifBell" style="display:none;">
+          <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+          </svg>
+          <span class="cart-badge" id="notifBadge" style="display:none; background: #E63946;">0</span>
+        </button>
+
+=======
+>>>>>>> Stashed changes
         <button onclick="toggleCart()" class="relative p-2">
           <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
@@ -425,7 +452,7 @@
         </button>
       </div>
     </div>
-    
+
     <!-- Mobile Menu Dropdown -->
     <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-gray-100 w-full absolute shadow-lg">
       <div class="flex flex-col p-4 space-y-4">
@@ -442,7 +469,7 @@
 
   <!-- PAGES CONTAINER -->
   <div style="min-height: 70vh; padding-top: 20px;">
-    
+
     <!-- MENU PAGE -->
     <div id="menuPage" class="page active">
       <!-- Hero Section -->
@@ -692,6 +719,24 @@
 
   </div>
 
+<<<<<<< Updated upstream
+  <!-- NOTIFICATIONS MODAL -->
+  <div class="modal-overlay" id="notifModal" style="display:none; z-index: 1000;" onclick="if(event.target === this) toggleNotifications()">
+    <div class="modal-box p-6" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="font-display text-2xl font-bold text-primary">Notifications</h2>
+        <button onclick="toggleNotifications()" class="text-2xl text-gray-400 hover:text-gray-600">&times;</button>
+      </div>
+      <div id="notifEmpty" class="text-center py-8 text-gray-500" style="display:none;">
+        <p class="text-4xl mb-3">🔔</p>
+        <p class="font-semibold">No notifications</p>
+      </div>
+      <div id="notifItems" class="space-y-4 mb-4"></div>
+    </div>
+  </div>
+
+=======
+>>>>>>> Stashed changes
   <!-- CART MODAL -->
   <div class="modal-overlay" id="cartModal" style="display:none" onclick="if(event.target === this) toggleCart()">
     <div class="modal-box p-6" onclick="event.stopPropagation()">
@@ -818,6 +863,8 @@ function applySuccessfulLogin(authData) {
   document.getElementById('analyticsDatePicker').value = today;
   fetchMenu();
   fetchOrders();
+  fetchNotifications();
+  setupSocketIO();
 }
 
 window.applySuccessfulLogin = applySuccessfulLogin;
@@ -825,7 +872,7 @@ window.applySuccessfulLogin = applySuccessfulLogin;
 async function handleLogin() {
   const email = document.getElementById('loginEmail').value;
   const password = document.getElementById('loginPassword').value;
-  
+
   if (!email || !password) {
     showAuthError('Please fill in all fields');
     return;
@@ -838,7 +885,7 @@ async function handleLogin() {
       body: JSON.stringify({ email, password })
     });
     const data = await res.json();
-    
+
     if (data.success) {
       applySuccessfulLogin(data);
     } else {
@@ -853,7 +900,7 @@ async function handleRegister() {
   const name = document.getElementById('regName').value;
   const email = document.getElementById('regEmail').value;
   const password = document.getElementById('regPassword').value;
-  
+
   if (!name || !email || !password) {
     showAuthError('Please fill in all fields');
     return;
@@ -866,7 +913,7 @@ async function handleRegister() {
       body: JSON.stringify({ name, email, password, role: 'customer' })
     });
     const data = await res.json();
-    
+
     if (data.success) {
       showAuthError('Account created! Now sign in.', 'success');
       setTimeout(() => toggleAuthForm(), 1500);
@@ -900,6 +947,10 @@ function logout() {
   localStorage.removeItem('user');
   app.token = null;
   app.user = null;
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
   location.reload();
 }
 
@@ -907,7 +958,7 @@ function updateUserInfo() {
   if (app.user) {
     document.getElementById('userName').textContent = app.user.name;
     document.getElementById('userRole').textContent = app.user.role.toUpperCase();
-    
+
     // Show admin link if admin
     if (app.user.role === 'admin') {
       document.getElementById('adminLink').style.display = 'block';
@@ -928,7 +979,7 @@ function getHeaders() {
 
 // ===== API CALLS =====
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'scantymeals-shop-1.onrender.com'
-  ? '' 
+  ? ''
   : 'https://scantymeals-shop-1.onrender.com';
 
 const originalFetch = window.fetch;
@@ -1046,14 +1097,14 @@ async function fetchOrders() {
 
 async function createOrder(name, phone) {
   if (!name || !phone) return;
-  
-  const items = app.cart.map(i => ({ 
-    name: i.name, 
-    price: i.price, 
-    quantity: i.quantity 
+
+  const items = app.cart.map(i => ({
+    name: i.name,
+    price: i.price,
+    quantity: i.quantity
   }));
   const total = cartTotal();
-  
+
   try {
     const res = await fetch('/api/orders', {
       method: 'POST',
@@ -1120,7 +1171,7 @@ async function fetchSummary() {
 function renderMenu() {
   const grid = document.getElementById('menuGrid');
   const count = document.getElementById('menuCount');
-  
+
   grid.innerHTML = app.menu.map(item => `
     <div class="menu-card">
       <div class="relative overflow-hidden h-56">
@@ -1139,14 +1190,14 @@ function renderMenu() {
       </div>
     </div>
   `).join('');
-  
+
   count.textContent = `${app.menu.length} varieties to choose from`;
 }
 
 function renderOrders() {
   const list = document.getElementById('ordersList');
   const empty = document.getElementById('ordersEmpty');
-  
+
   if (app.orders.length === 0) {
     list.style.display = 'none';
     empty.style.display = 'block';
@@ -1187,8 +1238,8 @@ function updateAdminTable() {
   const preparing = document.getElementById('adminPreparing');
   const delivered = document.getElementById('adminDelivered');
 
-  const filtered = app.orders.filter(o => 
-    o.id.toLowerCase().includes(search) || 
+  const filtered = app.orders.filter(o =>
+    o.id.toLowerCase().includes(search) ||
     o.customer_name.toLowerCase().includes(search)
   );
 
@@ -1224,7 +1275,7 @@ function updateAdminTable() {
 async function loadAnalytics() {
   const datePicker = document.getElementById('analyticsDatePicker');
   const selectedDate = datePicker.value;
-  
+
   const daily = await fetchAnalytics(selectedDate);
   const summary = await fetchSummary();
 
@@ -1388,7 +1439,7 @@ function showPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   // Update nav links
   document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-  
+
   // Show selected page
   const page = document.getElementById(pageId + 'Page');
   if (page) {
@@ -1452,11 +1503,142 @@ window.addEventListener('DOMContentLoaded', () => {
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('analyticsDatePicker').value = today;
       fetchOrders();
+      fetchNotifications();
+      setupSocketIO();
       // analytics loads when user navigates to it
     }
   }, 600);
 });
-</script>
 
+
+
+
+
+function toggleNotifications() {
+  const modal = document.getElementById('notifModal');
+  modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+  if (modal.style.display === 'flex') {
+    fetchNotifications();
+  }
+}
+
+async function fetchNotifications() {
+  if (!app.token) return;
+  try {
+    const res = await fetch('/api/notifications', {
+      headers: getHeaders()
+    });
+    const data = await res.json();
+    if (data.success) {
+      app.notifications = data.notifications || [];
+      renderNotifications();
+    }
+  } catch (err) {
+    console.error('Failed to fetch notifications:', err);
+  }
+}
+
+async function markNotifAsRead(notifId) {
+  try {
+    const res = await fetch(`/api/notifications/${notifId}/read`, {
+      method: 'PUT',
+      headers: getHeaders()
+    });
+    const data = await res.json();
+    if (data.success) {
+      const notif = app.notifications.find(n => n._id === notifId);
+      if (notif) notif.is_read = true;
+      renderNotifications();
+    }
+  } catch (err) {
+    console.error('Failed to mark notification as read:', err);
+  }
+}
+
+async function deleteNotification(notifId) {
+  try {
+    const res = await fetch(`/api/notifications/${notifId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await res.json();
+    if (data.success) {
+      app.notifications = app.notifications.filter(n => n._id !== notifId);
+      renderNotifications();
+    }
+  } catch (err) {
+    console.error('Failed to delete notification:', err);
+  }
+}
+
+function renderNotifications() {
+  const bell = document.getElementById('notifBell');
+  const badge = document.getElementById('notifBadge');
+  const empty = document.getElementById('notifEmpty');
+  const list = document.getElementById('notifItems');
+
+  if (!app.user) {
+    if (bell) bell.style.display = 'none';
+    return;
+  }
+  if (bell) bell.style.display = 'block';
+
+  if (!app.notifications) app.notifications = [];
+
+  const unreadCount = app.notifications.filter(n => !n.is_read).length;
+  if (unreadCount > 0) {
+    if (badge) {
+      badge.textContent = unreadCount;
+      badge.style.display = 'flex';
+    }
+  } else {
+    if (badge) badge.style.display = 'none';
+  }
+
+  if (app.notifications.length === 0) {
+    if (empty) empty.style.display = 'block';
+    if (list) list.style.display = 'none';
+  } else {
+    if (empty) empty.style.display = 'none';
+    if (list) {
+      list.style.display = 'block';
+      list.innerHTML = app.notifications.map(n => `
+        <div class="p-3 border rounded-lg flex justify-between items-start gap-4 ${n.is_read ? 'bg-white opacity-70' : 'bg-blue-50'} mb-2">
+          <div class="flex-1 cursor-pointer" onclick="markNotifAsRead('${n._id}')">
+            <p class="text-sm ${!n.is_read ? 'font-bold text-blue-900' : 'text-gray-700'}">${n.message}</p>
+            <p class="text-xs text-gray-400 mt-1">${new Date(n.timestamp).toLocaleString()}</p>
+          </div>
+          <button onclick="deleteNotification('${n._id}')" class="text-red-500 hover:text-red-700 text-sm">Delete</button>
+        </div>
+      `).join('');
+    }
+  }
+}
+
+let socket;
+function setupSocketIO() {
+  if (socket) return;
+  socket = io(); // Connect to current origin
+
+  socket.on('connect', () => {
+    if (app.token) {
+      socket.emit('join', { token: app.token });
+    }
+  });
+
+  socket.on('new_notification', (notif) => {
+    if (!app.notifications) app.notifications = [];
+    app.notifications.unshift(notif);
+    renderNotifications();
+
+    // Optionally show a toast for the actual notification
+    const toast = document.getElementById('successToast');
+    document.getElementById('toastOrderId').textContent = "New Notification: " + notif.message;
+    toast.style.display = 'flex';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+  });
+}
+
+</script>
 </body>
 </html>
