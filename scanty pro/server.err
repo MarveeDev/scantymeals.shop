@@ -1,0 +1,19 @@
+Werkzeug appears to be used in a production deployment. Consider switching to a production web server instead.
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.2:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [22/Jul/2026 22:25:48] "[35m[1mPOST /api/auth/register HTTP/1.1[0m" 201 -
+127.0.0.1 - - [22/Jul/2026 22:25:48] "[35m[1mPOST /api/auth/register HTTP/1.1[0m" 201 -
+/app/scanty pro/app.py:172: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  'exp': datetime.utcnow() + timedelta(hours=expires_in),
+/app/scanty pro/app.py:173: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  'iat': datetime.utcnow()
+127.0.0.1 - - [22/Jul/2026 22:25:48] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jul/2026 22:25:49] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jul/2026 22:25:49] "[35m[1mPOST /api/orders HTTP/1.1[0m" 201 -
+127.0.0.1 - - [22/Jul/2026 22:25:49] "PUT /api/orders/SCM-0001/status HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jul/2026 22:25:49] "GET /api/notifications HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jul/2026 22:25:49] "PUT /api/notifications/notif_1/read HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jul/2026 22:25:49] "DELETE /api/notifications/notif_1 HTTP/1.1" 200 -

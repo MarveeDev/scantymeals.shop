@@ -2,6 +2,7 @@
 import flask
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit, join_room
 from datetime import datetime, date, timedelta
 from pymongo import MongoClient
 from pymongo import ReturnDocument
@@ -15,6 +16,7 @@ from functools import wraps
 
 app = Flask(__name__, static_folder='.')
 CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 def hash_password(password: str) -> str:
     """
@@ -75,12 +77,14 @@ try:
     orders_collection = db['orders']
     order_counter_collection = db['counters']
     users_collection = db['users']
+    notifications_collection = db['notifications']
     MONGODB_CONNECTED = True
 except Exception as e:
     print(f"Warning: MongoDB connection failed ({e}). Using in-memory storage.")
     MONGODB_CONNECTED = False
     orders_db = []
     order_counter = [1]
+    notifications_db = []
     
     # In-memory users for demo
     users_db = [
@@ -431,6 +435,7 @@ def create_order():
     
     order = {
         "id": f"SCM-{order_number:04d}",
+        "user_id": request.user['user_id'],
         "customer_name": data.get("customer_name", "Guest"),
         "customer_phone": data.get("customer_phone", ""),
         "items": data.get("items", []),
@@ -473,23 +478,119 @@ def get_orders():
 @admin_required
 def update_order_status(order_id):
     data = request.json
+    new_status = data.get('status')
     
     if MONGODB_CONNECTED:
         result = orders_collection.find_one_and_update(
             {"id": order_id},
-            {"$set": {"status": data.get('status')}},
+            {"$set": {"status": new_status}},
             return_document=True
         )
         if result:
             result["_id"] = str(result["_id"])
+
+            # Create a notification for the user
+            user_id = result.get('user_id')
+            if user_id:
+                notification = {
+                    "user_id": user_id,
+                    "message": f"Your order {order_id} is now {new_status}",
+                    "is_read": False,
+                    "timestamp": datetime.now().isoformat(),
+                    "order_id": order_id
+                }
+                notif_result = notifications_collection.insert_one(notification)
+                notification["_id"] = str(notif_result.inserted_id)
+
+                # Emit via socket
+                socketio.emit('new_notification', notification, room=user_id)
+
             return jsonify({"success": True, "order": result})
         return jsonify({"success": False, "message": "Order not found"}), 404
     else:
         for order in orders_db:
             if order['id'] == order_id:
-                order['status'] = data.get('status', order['status'])
+                order['status'] = new_status
+
+                # Create a notification for the user
+                user_id = order.get('user_id')
+                if user_id:
+                    notification = {
+                        "_id": f"notif_{len(notifications_db) + 1}",
+                        "user_id": user_id,
+                        "message": f"Your order {order_id} is now {new_status}",
+                        "is_read": False,
+                        "timestamp": datetime.now().isoformat(),
+                        "order_id": order_id
+                    }
+                    notifications_db.append(notification)
+                    socketio.emit('new_notification', notification, room=user_id)
+
                 return jsonify({"success": True, "order": order})
         return jsonify({"success": False, "message": "Order not found"}), 404
+
+
+# ==================== Notifications ====================
+
+@socketio.on('join')
+def on_join(data):
+    token = data.get('token')
+    if token:
+        payload = verify_jwt_token(token)
+        if payload:
+            user_id = payload.get('user_id')
+            join_room(user_id)
+
+@app.route('/api/notifications', methods=['GET'])
+@token_required
+def get_notifications():
+    user_id = request.user['user_id']
+    if MONGODB_CONNECTED:
+        notifications = list(notifications_collection.find({"user_id": user_id}).sort("timestamp", -1))
+        for notif in notifications:
+            notif["_id"] = str(notif["_id"])
+        return jsonify({"success": True, "notifications": notifications})
+    else:
+        notifications = [n for n in notifications_db if n['user_id'] == user_id]
+        notifications.sort(key=lambda x: x['timestamp'], reverse=True)
+        return jsonify({"success": True, "notifications": notifications})
+
+@app.route('/api/notifications/<notification_id>/read', methods=['PUT'])
+@token_required
+def mark_notification_read(notification_id):
+    user_id = request.user['user_id']
+    if MONGODB_CONNECTED:
+        result = notifications_collection.find_one_and_update(
+            {"_id": ObjectId(notification_id), "user_id": user_id},
+            {"$set": {"is_read": True}},
+            return_document=True
+        )
+        if result:
+            result["_id"] = str(result["_id"])
+            return jsonify({"success": True, "notification": result})
+        return jsonify({"success": False, "message": "Notification not found"}), 404
+    else:
+        for notif in notifications_db:
+            if notif['_id'] == notification_id and notif['user_id'] == user_id:
+                notif['is_read'] = True
+                return jsonify({"success": True, "notification": notif})
+        return jsonify({"success": False, "message": "Notification not found"}), 404
+
+@app.route('/api/notifications/<notification_id>', methods=['DELETE'])
+@token_required
+def delete_notification(notification_id):
+    user_id = request.user['user_id']
+    if MONGODB_CONNECTED:
+        result = notifications_collection.delete_one({"_id": ObjectId(notification_id), "user_id": user_id})
+        if result.deleted_count > 0:
+            return jsonify({"success": True, "message": "Notification deleted"})
+        return jsonify({"success": False, "message": "Notification not found"}), 404
+    else:
+        for i, notif in enumerate(notifications_db):
+            if notif['_id'] == notification_id and notif['user_id'] == user_id:
+                del notifications_db[i]
+                return jsonify({"success": True, "message": "Notification deleted"})
+        return jsonify({"success": False, "message": "Notification not found"}), 404
 
 @app.route('/api/analytics/daily', methods=['GET'])
 @admin_required
@@ -551,4 +652,4 @@ def analytics_summary():
 if __name__ == '__main__':
     # Disable debug/reloader to prevent auto-restarts.
     # Also bind to 0.0.0.0 for common PaaS/container setups.
-    app.run(host="0.0.0.0", debug=False, use_reloader=False, port=5000)
+    socketio.run(app, host="0.0.0.0", debug=False, use_reloader=False, port=5000, allow_unsafe_werkzeug=True)
