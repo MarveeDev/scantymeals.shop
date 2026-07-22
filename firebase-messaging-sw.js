@@ -7,8 +7,8 @@ const firebaseConfig = {
   projectId: "scanty-meals",
   storageBucket: "scanty-meals.firebasestorage.app",
   messagingSenderId: "441632174969",
-  appId: "1:441632174969:web:4218799226a1179694b5a8",
-  measurementId: "G-VGFEC6VZ2T"
+  appId: "1:441632174969:web:966b7f634f39af6294b5a8",
+  measurementId: "G-JNRPCRSD2M"
 };
 
 firebase.initializeApp(firebaseConfig);

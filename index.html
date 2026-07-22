@@ -177,8 +177,8 @@
 
       <div class="flex items-center gap-2 sm:gap-4">
         <!-- Notification Bell -->
-        <button onclick="window.requestNotificationPermission ? window.requestNotificationPermission() : toggleNotif()" class="notif-bell" aria-label="Notifications" id="navNotifBtn" style="display:none">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+        <button onclick="toggleNotif()" class="notif-bell" aria-label="Notifications" id="navNotifBtn" style="display:none">
+          🔔<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
           <span class="notif-badge" id="notifBadge" style="display:none">0</span>
         </button>
 
@@ -415,15 +415,31 @@ function updateNotifUI() {
   }
 
   list.innerHTML = customerNotifications.map(n => `
-    <div class="notif-item ${n.read ? '' : 'unread'}" onclick="markNotifRead('${n._id || n.id}')">
+    <div class="notif-item ${n.read ? '' : 'unread'}" onclick="openCustomerNotifModal('${n._id || n.id}')">
       <div class="text-xs text-gray-500">${new Date(n.created_at).toLocaleString()}</div>
-      <div class="mt-1">${escapeHtml(n.message)}</div>
+      <div class="font-bold mt-1 text-gray-800">${escapeHtml(n.title || 'Notification')}</div>
+      <div class="mt-1 text-gray-700 whitespace-nowrap overflow-hidden text-ellipsis">${escapeHtml(n.message)}</div>
       <div class="mt-2 text-right">
         <button onclick="deleteCustomerNotif('${n._id || n.id}'); event.stopPropagation()" class="text-xs text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer">Delete</button>
       </div>
     </div>
   `).join('');
 }
+
+window.openCustomerNotifModal = function(id) {
+  const n = customerNotifications.find(x => (x._id || x.id) === id);
+  if(!n) return;
+  document.getElementById('cNotifModalTitle').textContent = n.title || 'Notification';
+  document.getElementById('cNotifModalDate').textContent = new Date(n.created_at).toLocaleString();
+  document.getElementById('cNotifModalBody').textContent = n.message;
+  document.getElementById('cNotifModal').style.display = 'flex';
+  if(!n.read) { markNotifRead(id); }
+  toggleNotif(); // close the drawer
+};
+
+window.closeCustomerNotifModal = function() {
+  document.getElementById('cNotifModal').style.display = 'none';
+};
 
 window.deleteCustomerNotif = async function(id) {
   if (!confirm("Delete this notification?")) return;
@@ -932,7 +948,8 @@ function applyAuthUI() {}
     projectId: "scanty-meals",
     storageBucket: "scanty-meals.firebasestorage.app",
     messagingSenderId: "441632174969",
-    appId: "1:441632174969:web:4218799226a1179694b5a8"
+    appId: "1:441632174969:web:966b7f634f39af6294b5a8",
+    measurementId: "G-JNRPCRSD2M"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -984,5 +1001,18 @@ function applyAuthUI() {}
     registerFCMToken();
   }
 </script>
+
+<!-- Customer Notification Modal -->
+<div id="cNotifModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#fff; width:90%; max-width:500px; padding:24px; border-radius:12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+    <h3 id="cNotifModalTitle" class="text-xl font-bold mb-2">Notification</h3>
+    <div id="cNotifModalDate" class="text-xs text-gray-500 mb-4"></div>
+    <p id="cNotifModalBody" class="text-gray-800 leading-relaxed"></p>
+    <div class="mt-6 text-right">
+      <button onclick="closeCustomerNotifModal()" class="btn-primary px-6 py-2 rounded-lg">Close</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

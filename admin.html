@@ -31,11 +31,12 @@
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
     <h1>Scanty Meals — Admin Dashboard</h1>
     <div class="header-controls">
-      <div id="notifBell" class="notif-bell" style="display:none" onclick="window.requestNotificationPermission ? window.requestNotificationPermission() : toggleNotifDropdown()">
+      <div id="notifBell" class="notif-bell" style="display:none" onclick="toggleNotifDropdown()">
         🔔<span id="notifBadge" class="notif-badge">0</span>
         <div id="notifDropdown" class="notif-dropdown" onclick="event.stopPropagation()">
-          <div class="notif-header">Notifications <span onclick="markAllRead()">Mark all read</span></div>
-          <div id="notifList"></div>
+          <div class="notif-header">Notifications <span onclick="markAllRead()" style="cursor:pointer; color:#007bff;">Mark all read</span></div>
+          <div id="notifList" style="max-height: 300px; overflow-y: auto;"></div>
+          <div style="text-align:center; padding:10px; border-top:1px solid #ddd; font-size:12px; cursor:pointer; color:#007bff;" onclick="viewAllAdminNotifications()">View all notifications</div>
         </div>
       </div>
       <button id="logoutBtn" class="btn btn-danger" onclick="logout()" style="display:none">Logout</button>
@@ -284,14 +285,32 @@
       }
 
       list.innerHTML = notifications.map(n => `
-        <div class="notif-item ${n.read ? '' : 'unread'}" onclick="markAsRead('${n._id || n.id}')">
+        <div class="notif-item ${n.read ? '' : 'unread'}" onclick="openNotifModal('${n._id || n.id}')">
           <div style="font-size:12px;color:#888">${new Date(n.created_at).toLocaleString()}</div>
-          <div>${escapeHtml(n.message)}</div>
+          <div style="font-weight:bold; margin-bottom:4px;">${escapeHtml(n.title || 'Notification')}</div>
+          <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(n.message)}</div>
           <div style="margin-top: 5px; text-align: right;">
             <button onclick="deleteNotification('${n._id || n.id}'); event.stopPropagation()" style="font-size:11px; background:none; border:none; color:#d9534f; cursor:pointer;">Delete</button>
           </div>
         </div>
       `).join('');
+    }
+
+    function openNotifModal(id) {
+      const n = notifications.find(x => (x._id || x.id) === id);
+      if(!n) return;
+      document.getElementById('notifModalTitle').textContent = n.title || 'Notification';
+      document.getElementById('notifModalDate').textContent = new Date(n.created_at).toLocaleString();
+      document.getElementById('notifModalBody').textContent = n.message;
+      document.getElementById('notifModal').style.display = 'block';
+      if(!n.read) { markAsRead(id); }
+      document.getElementById('notifDropdown').style.display = 'none';
+    }
+
+    function viewAllAdminNotifications() {
+      // Just expand the dropdown max-height
+      document.getElementById('notifList').style.maxHeight = '600px';
+      alert('All loaded notifications are now shown in the dropdown list.');
     }
 
     async function deleteNotification(id) {
@@ -369,7 +388,8 @@
     projectId: "scanty-meals",
     storageBucket: "scanty-meals.firebasestorage.app",
     messagingSenderId: "441632174969",
-    appId: "1:441632174969:web:4218799226a1179694b5a8"
+    appId: "1:441632174969:web:966b7f634f39af6294b5a8",
+    measurementId: "G-JNRPCRSD2M"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -418,5 +438,17 @@
     registerFCMToken();
   }
 </script>
+
+<div id="notifModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;">
+  <div style="background:#fff; width:90%; max-width:500px; margin:100px auto; padding:20px; border-radius:8px; position:relative;">
+    <h3 id="notifModalTitle" style="margin-top:0;">Notification</h3>
+    <div style="font-size:12px; color:#888; margin-bottom:10px;" id="notifModalDate"></div>
+    <p id="notifModalBody" style="line-height:1.5;"></p>
+    <div style="text-align:right; margin-top:20px;">
+      <button onclick="document.getElementById('notifModal').style.display='none'" class="btn btn-primary" style="padding:8px 16px; cursor:pointer;">Close</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

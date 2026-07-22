@@ -1187,8 +1187,15 @@ def get_notifications():
 @app.route('/api/notifications/<notif_id>/read', methods=['PUT'])
 def mark_notification_read(notif_id):
     if MONGODB_CONNECTED:
+        try:
+            from bson.objectid import ObjectId
+            obj_id = ObjectId(notif_id)
+            query = {"$or": [{"id": notif_id}, {"_id": obj_id}]}
+        except:
+            query = {"id": notif_id}
+            
         result = notifications_collection.find_one_and_update(
-            {"id": notif_id},
+            query,
             {"$set": {"read": True}},
             return_document=ReturnDocument.AFTER
         )
@@ -1197,7 +1204,7 @@ def mark_notification_read(notif_id):
             return jsonify({"success": True, "notification": result})
     else:
         for n in notifications_db:
-            if n["id"] == notif_id:
+            if n["id"] == notif_id or str(n.get("_id", "")) == notif_id:
                 n["read"] = True
                 return jsonify({"success": True, "notification": n})
     return jsonify({"success": False, "message": "Notification not found"}), 404
@@ -1205,7 +1212,14 @@ def mark_notification_read(notif_id):
 @app.route('/api/notifications/<notif_id>', methods=['DELETE'])
 def delete_notification(notif_id):
     if MONGODB_CONNECTED:
-        result = notifications_collection.delete_one({"id": notif_id})
+        try:
+            from bson.objectid import ObjectId
+            obj_id = ObjectId(notif_id)
+            query = {"$or": [{"id": notif_id}, {"_id": obj_id}]}
+        except:
+            query = {"id": notif_id}
+            
+        result = notifications_collection.delete_one(query)
         if result.deleted_count:
             return jsonify({"success": True})
     else:
