@@ -137,6 +137,15 @@
       z-index: 300; font-weight: 500; opacity: 0; transition: opacity .3s;
     }
     .toast.show { opacity: 1; }
+
+    /* Notifications */
+    .notif-bell { position: relative; padding: 8px; cursor: pointer; color: #4b5563; }
+    .notif-badge { position: absolute; top: 2px; right: 2px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    .notif-drawer { position: fixed; top: 0; right: 0; height: 100vh; width: min(400px, 100%); background: white; z-index: 201; transform: translateX(100%); transition: transform .3s ease; display: flex; flex-direction: column; box-shadow: -8px 0 30px rgba(0,0,0,.15); }
+    .notif-drawer.open { transform: translateX(0); }
+    .notif-item { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; }
+    .notif-item.unread { background: #f4f8ff; border-left: 4px solid #ef4444; }
+    .notif-item:hover { background: #f9f9f9; }
   </style>
 </head>
 
@@ -167,6 +176,12 @@
       </div>
 
       <div class="flex items-center gap-2 sm:gap-4">
+        <!-- Notification Bell -->
+        <button onclick="window.requestNotificationPermission ? window.requestNotificationPermission() : toggleNotif()" class="notif-bell" aria-label="Notifications" id="navNotifBtn" style="display:none">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+          <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+        </button>
+
         <button onclick="toggleCart()" class="relative p-2" aria-label="Cart">
           <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
@@ -305,8 +320,22 @@
   </div>
 </aside>
 
+<!-- Notifications drawer -->
+<div id="notifBackdrop" class="drawer-backdrop" onclick="toggleNotif()"></div>
+<aside id="notifDrawer" class="notif-drawer" aria-label="Notifications">
+  <div class="p-4 border-b flex items-center justify-between">
+    <h3 class="text-lg font-bold">Notifications</h3>
+    <button onclick="toggleNotif()" class="text-2xl leading-none" aria-label="Close">×</button>
+  </div>
+  <div class="p-2 border-b text-right">
+    <button onclick="markAllNotifsRead()" class="text-sm text-blue-600 font-medium">Mark all read</button>
+  </div>
+  <div id="notifList" class="flex-1 overflow-y-auto"></div>
+</aside>
+
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
 
   // Wake up Render backend on page load (prevents cold-start on first order)
@@ -330,6 +359,106 @@ const USER_KEY = 'user';
 const ORDERS_KEY = 'scanty_local_orders';
 
 let MENU_ITEMS_CACHE = []; // populated by fetchMenu()
+
+// Customer Notifications Logic
+let notifSocket = null;
+let customerNotifications = [];
+const customerAudioAlert = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
+function toggleNotif() {
+  const d = $('notifDrawer');
+  const b = $('notifBackdrop');
+  if (d && b) {
+    d.classList.toggle('open');
+    b.classList.toggle('open');
+    updateNotifUI();
+  }
+}
+
+async function fetchCustomerNotifications() {
+  const phone = (localStorage.getItem('customerPhone') || '').trim();
+  const btn = $('navNotifBtn');
+  if (!phone) {
+    if (btn) btn.style.display = 'none';
+    return;
+  }
+  if (btn) btn.style.display = 'block';
+
+  try {
+    const res = await fetch(API_BASE + '/api/notifications?customer_phone=' + encodeURIComponent(phone));
+    if (res.ok) {
+      const data = await res.json();
+      customerNotifications = data.notifications || [];
+      updateNotifUI();
+    }
+  } catch (e) { console.error('fetchCustomerNotifications:', e); }
+}
+
+function updateNotifUI() {
+  const list = $('notifList');
+  const badge = $('notifBadge');
+  if (!list) return;
+
+  const unreadCount = customerNotifications.filter(n => !n.read).length;
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  if (customerNotifications.length === 0) {
+    list.innerHTML = '<div class="p-4 text-center text-gray-500">No notifications</div>';
+    return;
+  }
+
+  list.innerHTML = customerNotifications.map(n => `
+    <div class="notif-item ${n.read ? '' : 'unread'}" onclick="markNotifRead('${n._id || n.id}')">
+      <div class="text-xs text-gray-500">${new Date(n.created_at).toLocaleString()}</div>
+      <div class="mt-1">${escapeHtml(n.message)}</div>
+    </div>
+  `).join('');
+}
+
+async function markNotifRead(id) {
+  const n = customerNotifications.find(x => (x._id || x.id) === id);
+  if (n && !n.read) {
+    n.read = true;
+    updateNotifUI();
+    try { await fetch(API_BASE + '/api/notifications/' + id + '/read', { method: 'PUT' }); } catch(e){}
+  }
+}
+
+async function markAllNotifsRead() {
+  const unread = customerNotifications.filter(n => !n.read);
+  for (const n of unread) {
+    n.read = true;
+    try { await fetch(API_BASE + '/api/notifications/' + (n._id || n.id) + '/read', { method: 'PUT' }); } catch(e){}
+  }
+  updateNotifUI();
+}
+
+function initCustomerSocket() {
+  const phone = (localStorage.getItem('customerPhone') || '').trim();
+  if (!phone || notifSocket) return;
+
+  notifSocket = io(API_BASE);
+  notifSocket.on('connect', () => {
+    notifSocket.emit('join', { room: 'customer:' + phone });
+  });
+
+  notifSocket.on('status_update', (data) => {
+    customerNotifications.unshift(data);
+    updateNotifUI();
+    customerAudioAlert.play().catch(e => console.log('Audio error', e));
+    showToast('New update: ' + data.message);
+    
+    // Attempt to reload orders if the function is available
+    if (typeof loadMyOrders === 'function') loadMyOrders(); 
+  });
+}
 
 function $(id) { return document.getElementById(id); }
 function escapeHtml(s) {
@@ -638,6 +767,8 @@ window.addEventListener('DOMContentLoaded', () => {
   updateCartCount();
   updateCartUI();
   fetchMenu();
+  fetchCustomerNotifications();
+  initCustomerSocket();
 
   const checkoutForm = $('checkoutForm');
   checkoutForm?.addEventListener('submit', async (event) => {
@@ -753,8 +884,10 @@ window.addEventListener('DOMContentLoaded', () => {
       if (submittedPhone) localStorage.setItem('customerPhone', submittedPhone);
 
       clearCart();
-      // refresh orders after successful checkout
+      // refresh orders and notifications after successful checkout
       loadMyOrders?.();
+      fetchCustomerNotifications();
+      initCustomerSocket();
       goToPage('orders');
     } catch (err) {
   // LOG THE ACTUAL ERROR — critical for mobile debugging
@@ -769,9 +902,73 @@ window.addEventListener('DOMContentLoaded', () => {
 }
       
     
+    
   });
 });
 function applyAuthUI() {}
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCwGFWUeGeAnVew0MawvtYjLqQrKDhLcXE",
+    authDomain: "scanty-meals.firebaseapp.com",
+    projectId: "scanty-meals",
+    storageBucket: "scanty-meals.firebasestorage.app",
+    messagingSenderId: "441632174969",
+    appId: "1:441632174969:web:4218799226a1179694b5a8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const messaging = getMessaging(app);
+
+  async function registerFCMToken() {
+    const phone = (localStorage.getItem('customerPhone') || '').trim();
+    if (!phone) return; 
+    try {
+      // NOTE: For push to work flawlessly, a VAPID key is usually required.
+      // E.g., await getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY_HERE' })
+      const token = await getToken(messaging);
+      if (token) {
+        console.log('FCM Token generated');
+        await fetch(API_BASE + '/api/notifications/register-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audience: 'customer:' + phone, token: token })
+        });
+      }
+    } catch (err) {
+      console.log('An error occurred while retrieving token. ', err);
+    }
+  }
+
+  window.requestNotificationPermission = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        await registerFCMToken();
+        showToast('Notifications enabled!');
+      } else {
+        showToast('Notification permission denied.');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  onMessage(messaging, (payload) => {
+    console.log('FCM Message received in foreground: ', payload);
+    // We already have socket.io handling foreground, but just in case:
+    if (typeof showToast === 'function' && payload.notification) {
+      showToast(payload.notification.title + ': ' + payload.notification.body);
+    }
+  });
+  
+  if (Notification.permission === 'granted') {
+    registerFCMToken();
+  }
 </script>
 </body>
 </html>

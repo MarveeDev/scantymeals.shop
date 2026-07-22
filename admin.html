@@ -15,12 +15,31 @@
     .btn-danger{background:#dc3545;color:#fff}
     .err{padding:15px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;border-radius:4px;margin-bottom:20px}
     h1{color:#FF6B35;margin:0}
+    .header-controls { display:flex; align-items:center; gap: 15px; }
+    .notif-bell { position:relative; cursor:pointer; font-size:24px; user-select:none; }
+    .notif-badge { position:absolute; top:-5px; right:-8px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:12px; font-weight:bold; display:none; }
+    .notif-dropdown { position:absolute; top:40px; right:0; background:white; border:1px solid #ddd; box-shadow:0 4px 8px rgba(0,0,0,0.1); width:300px; max-height:400px; overflow-y:auto; display:none; z-index:100; border-radius:4px; }
+    .notif-item { padding:10px; border-bottom:1px solid #eee; font-size:14px; cursor:pointer; text-align:left; }
+    .notif-item.unread { background:#f4f8ff; font-weight:bold; }
+    .notif-item:last-child { border-bottom:none; }
+    .notif-item:hover { background:#f9f9f9; }
+    .notif-header { padding:10px; font-weight:bold; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; font-size:14px; }
+    .notif-header span { cursor:pointer; color:#007bff; font-size:12px; font-weight:normal; }
   </style>
 </head>
 <body>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
     <h1>Scanty Meals — Admin Dashboard</h1>
-    <button id="logoutBtn" class="btn btn-danger" onclick="logout()" style="display:none">Logout</button>
+    <div class="header-controls">
+      <div id="notifBell" class="notif-bell" style="display:none" onclick="window.requestNotificationPermission ? window.requestNotificationPermission() : toggleNotifDropdown()">
+        🔔<span id="notifBadge" class="notif-badge">0</span>
+        <div id="notifDropdown" class="notif-dropdown" onclick="event.stopPropagation()">
+          <div class="notif-header">Notifications <span onclick="markAllRead()">Mark all read</span></div>
+          <div id="notifList"></div>
+        </div>
+      </div>
+      <button id="logoutBtn" class="btn btn-danger" onclick="logout()" style="display:none">Logout</button>
+    </div>
   </div>
 
   <div id="authError" class="err" style="display:none">
@@ -45,6 +64,7 @@
     <div id="customers">Loading...</div>
   </div>
 
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
     // ============================================================
     // CONFIG — admin.html may be served from Render OR Firebase.
@@ -94,6 +114,7 @@
       document.getElementById('authError').style.display = 'none';
       document.getElementById('adminContent').style.display = 'block';
       document.getElementById('logoutBtn').style.display = 'inline-block';
+      document.getElementById('notifBell').style.display = 'inline-block';
     }
 
     function api(path, opts = {}) {
@@ -191,27 +212,14 @@
     async function initDashboard() {
       const [sum, ord] = await Promise.all([fetchSummary(), fetchOrders()]);
 
-      if (sum && typeof sum.total_orders !== 'undefined') {
-        document.getElementById('totalOrders').textContent = sum.total_orders;
-        document.getElementById('revenue').textContent = '₵' + (Number(sum.total_revenue) || 0).toFixed(2);
+      if (ord && ord.stats) {
+        document.getElementById('totalOrders').textContent = ord.stats.totalOrders;
+        document.getElementById('revenue').textContent = '₵' + (Number(ord.stats.totalRevenue) || 0).toFixed(2);
+        document.getElementById('todayOrders').textContent = ord.stats.todayOrders;
+        document.getElementById('todayRevenue').textContent = '₵' + (Number(ord.stats.todayRevenue) || 0).toFixed(2);
       }
 
       if (ord && Array.isArray(ord.orders)) {
-        const today = new Date().toISOString().slice(0, 10);
-        const todays = ord.orders.filter(o => {
-          let oDate = '';
-          if (o.date) {
-            oDate = o.date;
-          } else if (o.timestamp) {
-            oDate = o.timestamp.slice(0, 10);
-          }
-          return oDate === today;
-        });
-
-        const todayRevenue = todays.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-
-        document.getElementById('todayOrders').textContent = todays.length;
-        document.getElementById('todayRevenue').textContent = '₵' + todayRevenue.toFixed(2);
         renderOrders([...ord.orders].reverse());
 
         const map = new Map();
@@ -230,6 +238,95 @@
       }
     }
 
+    // Notifications Logic
+    let socket = null;
+    let notifications = [];
+    const audioAlert = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
+    function toggleNotifDropdown() {
+      const dd = document.getElementById('notifDropdown');
+      dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+    }
+
+    document.addEventListener('click', (e) => {
+      const bell = document.getElementById('notifBell');
+      if (bell && !bell.contains(e.target)) {
+        document.getElementById('notifDropdown').style.display = 'none';
+      }
+    });
+
+    async function fetchNotifications() {
+      try {
+        const res = await api('/api/notifications');
+        if (res.ok) {
+          const data = await res.json();
+          notifications = data.notifications || [];
+          renderNotifications();
+        }
+      } catch (e) { console.error('fetchNotifications:', e); }
+    }
+
+    function renderNotifications() {
+      const list = document.getElementById('notifList');
+      const badge = document.getElementById('notifBadge');
+      
+      const unreadCount = notifications.filter(n => !n.read).length;
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+
+      if (notifications.length === 0) {
+        list.innerHTML = '<div style="padding:10px;text-align:center;color:#666">No notifications</div>';
+        return;
+      }
+
+      list.innerHTML = notifications.map(n => `
+        <div class="notif-item ${n.read ? '' : 'unread'}" onclick="markAsRead('${n._id || n.id}')">
+          <div style="font-size:12px;color:#888">${new Date(n.created_at).toLocaleString()}</div>
+          <div>${escapeHtml(n.message)}</div>
+        </div>
+      `).join('');
+    }
+
+    async function markAsRead(id) {
+      const n = notifications.find(x => (x._id || x.id) === id);
+      if (n && !n.read) {
+        n.read = true;
+        renderNotifications();
+        try { await api('/api/notifications/' + id + '/read', { method: 'PUT' }); } catch(e){}
+      }
+    }
+
+    async function markAllRead() {
+      const unread = notifications.filter(n => !n.read);
+      for (const n of unread) {
+        n.read = true;
+        try { await api('/api/notifications/' + (n._id || n.id) + '/read', { method: 'PUT' }); } catch(e){}
+      }
+      renderNotifications();
+    }
+
+    function initSocket() {
+      if (socket) return;
+      socket = io(API_BASE, {
+        auth: { token: token }
+      });
+      
+      socket.on('connect', () => {
+        socket.emit('join', { room: 'admin' });
+      });
+
+      socket.on('new_order', (data) => {
+        notifications.unshift(data);
+        renderNotifications();
+        audioAlert.play().catch(e => console.log('Audio play prevented', e));
+        initDashboard(); // Refresh orders
+      });
+    }
+
     // ===== Bootstrap =====
     (function init() {
       token = getToken();
@@ -243,7 +340,69 @@
       };
       showAdminContent();
       initDashboard();
+      fetchNotifications();
+      initSocket();
     })();
   </script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCwGFWUeGeAnVew0MawvtYjLqQrKDhLcXE",
+    authDomain: "scanty-meals.firebaseapp.com",
+    projectId: "scanty-meals",
+    storageBucket: "scanty-meals.firebasestorage.app",
+    messagingSenderId: "441632174969",
+    appId: "1:441632174969:web:4218799226a1179694b5a8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const messaging = getMessaging(app);
+
+  async function registerFCMToken() {
+    // Make sure admin is logged in before registering
+    if (!localStorage.getItem('token') && !sessionStorage.getItem('token')) return;
+
+    try {
+      // NOTE: For push to work flawlessly, a VAPID key is usually required.
+      const token = await getToken(messaging);
+      if (token) {
+        console.log('Admin FCM Token generated');
+        await api('/api/notifications/register-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audience: 'admin', token: token })
+        });
+      }
+    } catch (err) {
+      console.log('An error occurred while retrieving token. ', err);
+    }
+  }
+
+  window.requestNotificationPermission = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        await registerFCMToken();
+        alert('Notifications enabled!');
+      } else {
+        alert('Notification permission denied.');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  onMessage(messaging, (payload) => {
+    console.log('FCM Message received in foreground (Admin): ', payload);
+  });
+  
+  // Call register immediately in case permission was already granted
+  if (Notification.permission === 'granted') {
+    registerFCMToken();
+  }
+</script>
 </body>
 </html>

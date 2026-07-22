@@ -10,6 +10,9 @@ from pymongo import MongoClient, ReturnDocument
 from bson.objectid import ObjectId
 import jwt
 import bcrypt
+from flask_socketio import SocketIO, emit, join_room, leave_room
+import firebase_admin
+from firebase_admin import credentials, messaging
 
 
 # ============================================================================
@@ -30,6 +33,27 @@ CORS(
     supports_credentials=False,
     expose_headers=["Content-Type", "Authorization"],
 )
+
+# Setup SocketIO
+socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS, async_mode='eventlet')
+
+# Setup Firebase Admin
+try:
+    if os.path.exists("firebase-adminsdk.json"):
+        cred = credentials.Certificate("firebase-adminsdk.json")
+        firebase_admin.initialize_app(cred)
+        FIREBASE_ADMIN_READY = True
+    elif os.getenv("FIREBASE_CREDENTIALS"):
+        cred_dict = json.loads(base64.b64decode(os.getenv("FIREBASE_CREDENTIALS")).decode('utf-8'))
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
+        FIREBASE_ADMIN_READY = True
+    else:
+        FIREBASE_ADMIN_READY = False
+        print("Warning: Firebase Admin SDK credentials not found. Push notifications disabled.")
+except Exception as e:
+    print(f"Warning: Firebase Admin SDK init failed: {e}")
+    FIREBASE_ADMIN_READY = False
 
 @app.before_request
 def log_request():
@@ -62,12 +86,17 @@ try:
     orders_collection = db['orders']
     order_counter_collection = db['counters']
     users_collection = db['users']
+    notifications_collection = db['notifications']
+    fcm_tokens_collection = db['fcm_tokens']
     # Helpful indexes
     try:
         orders_collection.create_index('id', unique=True)
         orders_collection.create_index('date')
         users_collection.create_index('email', unique=True, sparse=True)
         users_collection.create_index('phone', sparse=True)
+        notifications_collection.create_index('audience')
+        notifications_collection.create_index('created_at')
+        fcm_tokens_collection.create_index('audience', unique=True)
     except Exception as ie:
         print(f"Index init warning: {ie}")
     MONGODB_CONNECTED = True
@@ -78,6 +107,8 @@ except Exception as e:
     orders_db = []
     order_counter = [1]
     users_db = []  # populated below once helpers exist
+    notifications_db = []
+    fcm_tokens_db = {} # audience -> token mapping
 
 
 
@@ -730,6 +761,20 @@ def create_order():
                     "POST /api/orders | Insert success inserted_id=%s",
                     order["_id"]
                 )
+                
+                # Create Admin Notification
+                try:
+                    _create_notification(
+                        audience="admin",
+                        notif_type="new_order",
+                        payload={
+                            "title": "New Order Received",
+                            "message": f"Order {order['id']} from {order['customer_name']} (Total: ₵{order['total']})",
+                            "order_id": order["id"]
+                        }
+                    )
+                except Exception as e:
+                    app.logger.warning(f"Failed to create admin notification: {e}")
             except Exception as e:
                 app.logger.exception(
                     "POST /api/orders | Insert failed id=%s total=%s err=%s",
@@ -921,11 +966,56 @@ def update_order_status(order_id):
         if not result:
             return jsonify({"success": False, "message": "Order not found"}), 404
         result["_id"] = str(result["_id"])
+        
+        # Create Customer Notification
+        phone = result.get('customer_phone')
+        if phone:
+            msg_map = {
+                "Confirmed": f"Your order {order_id} has been confirmed.",
+                "Preparing": "Your food is being prepared.",
+                "Ready": "Your order is ready for pickup.",
+                "Delivered": "Your order has been delivered.",
+                "Cancelled": f"Your order {order_id} has been cancelled."
+            }
+            try:
+                _create_notification(
+                    audience=f"customer:{phone}",
+                    notif_type="status_update",
+                    payload={
+                        "title": f"Order {new_status}",
+                        "message": msg_map.get(new_status, f"Your order status is now {new_status}."),
+                        "order_id": order_id
+                    }
+                )
+            except Exception as e:
+                app.logger.warning(f"Failed to create customer notification: {e}")
+                
         return jsonify({"success": True, "order": result})
 
     for order in orders_db:
         if order['id'] == order_id:
             order['status'] = new_status
+            phone = order.get('customer_phone')
+            if phone:
+                msg_map = {
+                    "Confirmed": f"Your order {order_id} has been confirmed.",
+                    "Preparing": "Your food is being prepared.",
+                    "Ready": "Your order is ready for pickup.",
+                    "Delivered": "Your order has been delivered.",
+                    "Cancelled": f"Your order {order_id} has been cancelled."
+                }
+                try:
+                    _create_notification(
+                        audience=f"customer:{phone}",
+                        notif_type="status_update",
+                        payload={
+                            "title": f"Order {new_status}",
+                            "message": msg_map.get(new_status, f"Your order status is now {new_status}."),
+                            "order_id": order_id
+                        }
+                    )
+                except Exception as e:
+                    app.logger.warning(f"Failed to create customer notification: {e}")
             return jsonify({"success": True, "order": order})
     return jsonify({"success": False, "message": "Order not found"}), 404
 
@@ -991,6 +1081,145 @@ def analytics_summary():
 
 
 # ============================================================================
+# NOTIFICATIONS
+# ============================================================================
+
+def _create_notification(audience, notif_type, payload):
+    doc = {
+        "id": str(ObjectId()) if MONGODB_CONNECTED else f"notif_{int(datetime.utcnow().timestamp()*1000)}",
+        "audience": audience,
+        "type": notif_type,
+        "title": payload.get("title", ""),
+        "message": payload.get("message", ""),
+        "order_id": payload.get("order_id"),
+        "payload": payload,
+        "read": False,
+        "created_at": datetime.utcnow().isoformat()
+    }
+    if MONGODB_CONNECTED:
+        try:
+            result = notifications_collection.insert_one(doc)
+            doc["_id"] = str(result.inserted_id)
+        except Exception as e:
+            app.logger.warning(f"Failed to insert notification: {e}")
+    else:
+        notifications_db.append(doc)
+    
+    # Emit to Socket.IO room (room name = audience)
+    socketio.emit(notif_type, doc, to=audience)
+    
+    # Optional FCM
+    if FIREBASE_ADMIN_READY:
+        fcm_token = payload.get("fcm_token")
+        if not fcm_token:
+            if MONGODB_CONNECTED:
+                token_doc = fcm_tokens_collection.find_one({"audience": audience})
+                if token_doc:
+                    fcm_token = token_doc.get("token")
+            else:
+                fcm_token = fcm_tokens_db.get(audience)
+                
+        if fcm_token:
+            try:
+                msg = messaging.Message(
+                    notification=messaging.Notification(
+                        title=doc["title"],
+                        body=doc["message"],
+                    ),
+                    data={"order_id": str(doc["order_id"] or ""), "type": notif_type, "url": "/#orders"},
+                    token=fcm_token
+                )
+                messaging.send(msg)
+            except Exception as e:
+                app.logger.warning(f"FCM send failed: {e}")
+
+@app.route('/api/notifications/register-token', methods=['POST'])
+def register_fcm_token():
+    data = request.get_json(silent=True) or {}
+    audience = data.get('audience')
+    token = data.get('token')
+    
+    if not audience or not token:
+        return jsonify({"success": False, "message": "Audience and token are required"}), 400
+        
+    if MONGODB_CONNECTED:
+        fcm_tokens_collection.update_one(
+            {"audience": audience},
+            {"$set": {"token": token, "updated_at": datetime.utcnow().isoformat()}},
+            upsert=True
+        )
+    else:
+        fcm_tokens_db[audience] = token
+        
+    return jsonify({"success": True})
+
+@app.route('/api/notifications', methods=['GET'])
+def get_notifications():
+    audience = request.args.get('audience') # e.g. 'admin' or 'customer:<phone>'
+    if not audience:
+        return jsonify({"success": False, "message": "Audience required"}), 400
+    
+    if MONGODB_CONNECTED:
+        notifs = list(notifications_collection.find({"audience": audience}).sort("created_at", -1).limit(50))
+        for n in notifs:
+            n["_id"] = str(n["_id"])
+    else:
+        notifs = [n for n in notifications_db if n["audience"] == audience]
+        notifs = sorted(notifs, key=lambda x: x["created_at"], reverse=True)[:50]
+        
+    return jsonify({"success": True, "notifications": notifs})
+
+@app.route('/api/notifications/<notif_id>/read', methods=['PUT'])
+def mark_notification_read(notif_id):
+    if MONGODB_CONNECTED:
+        result = notifications_collection.find_one_and_update(
+            {"id": notif_id},
+            {"$set": {"read": True}},
+            return_document=ReturnDocument.AFTER
+        )
+        if result:
+            result["_id"] = str(result["_id"])
+            return jsonify({"success": True, "notification": result})
+    else:
+        for n in notifications_db:
+            if n["id"] == notif_id:
+                n["read"] = True
+                return jsonify({"success": True, "notification": n})
+    return jsonify({"success": False, "message": "Notification not found"}), 404
+
+@app.route('/api/notifications/<notif_id>', methods=['DELETE'])
+def delete_notification(notif_id):
+    if MONGODB_CONNECTED:
+        result = notifications_collection.delete_one({"id": notif_id})
+        if result.deleted_count:
+            return jsonify({"success": True})
+    else:
+        global notifications_db
+        initial_len = len(notifications_db)
+        notifications_db = [n for n in notifications_db if n["id"] != notif_id]
+        if len(notifications_db) < initial_len:
+            return jsonify({"success": True})
+    return jsonify({"success": False, "message": "Notification not found"}), 404
+
+# ============================================================================
+# SOCKET.IO EVENTS
+# ============================================================================
+
+@socketio.on('join')
+def on_join(data):
+    room = data.get('room')
+    if room:
+        join_room(room)
+        app.logger.info(f"Socket connected to room: {room}")
+
+@socketio.on('leave')
+def on_leave(data):
+    room = data.get('room')
+    if room:
+        leave_room(room)
+
+
+# ============================================================================
 # HEALTH
 # ============================================================================
 
@@ -1008,4 +1237,4 @@ def health():
 # ============================================================================
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=False, use_reloader=False, port=int(os.getenv('PORT', 5000)))
+    socketio.run(app, host="0.0.0.0", debug=False, use_reloader=False, port=int(os.getenv('PORT', 5000)))
