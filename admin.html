@@ -167,7 +167,7 @@
       const rows = orders.map(o => {
         const id = escapeHtml(o.id);
         const total = (Number(o.total) || 0).toFixed(2);
-        const statusOpts = ['Confirmed','Preparing','Ready','Delivered','Cancelled']
+        const statusOpts = ['Confirmed','Preparing','Ready','Out for Delivery','Delivered','Cancelled']
           .map(s => `<option ${o.status===s?'selected':''}>${s}</option>`).join('');
 
         const itemsOrdered = formatItemsOrdered(o.items);

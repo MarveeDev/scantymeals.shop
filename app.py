@@ -35,7 +35,7 @@ CORS(
 )
 
 # Setup SocketIO
-socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS, async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS)
 
 # Setup Firebase Admin
 try:
@@ -946,7 +946,7 @@ def list_order_responses(order_id):
     return jsonify({"success": False, "message": "Order not found"}), 404
 
 
-VALID_STATUSES = {"Confirmed", "Preparing", "Ready", "Delivered", "Cancelled"}
+VALID_STATUSES = {"Confirmed", "Preparing", "Ready", "Out for Delivery", "Delivered", "Cancelled"}
 
 
 @app.route('/api/orders/<order_id>/status', methods=['PUT'])
@@ -974,6 +974,7 @@ def update_order_status(order_id):
                 "Confirmed": f"Your order {order_id} has been confirmed.",
                 "Preparing": "Your food is being prepared.",
                 "Ready": "Your order is ready for pickup.",
+                "Out for Delivery": "Your order is out for delivery.",
                 "Delivered": "Your order has been delivered.",
                 "Cancelled": f"Your order {order_id} has been cancelled."
             }
@@ -1001,6 +1002,7 @@ def update_order_status(order_id):
                     "Confirmed": f"Your order {order_id} has been confirmed.",
                     "Preparing": "Your food is being prepared.",
                     "Ready": "Your order is ready for pickup.",
+                    "Out for Delivery": "Your order is out for delivery.",
                     "Delivered": "Your order has been delivered.",
                     "Cancelled": f"Your order {order_id} has been cancelled."
                 }
@@ -1151,6 +1153,19 @@ def register_fcm_token():
     else:
         fcm_tokens_db[audience] = token
         
+    return jsonify({"success": True})
+
+@app.route('/api/notifications', methods=['POST'])
+@admin_required
+def create_notification_api():
+    data = request.get_json(silent=True) or {}
+    audience = data.get('audience')
+    notif_type = data.get('type', 'alert')
+    title = data.get('title', 'Notification')
+    message = data.get('message', '')
+    if not audience or not message:
+        return jsonify({"success": False, "message": "Audience and message are required"}), 400
+    _create_notification(audience, notif_type, {"title": title, "message": message})
     return jsonify({"success": True})
 
 @app.route('/api/notifications', methods=['GET'])
