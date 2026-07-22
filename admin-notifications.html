@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Notifications - Scanty Meals</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7fa; margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    h1 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .btn { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 14px; }
+    .btn-secondary { background: #6c757d; }
+    .btn-danger { background: #d9534f; }
+    .btn:hover { opacity: 0.9; }
+    
+    .notif-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; gap: 15px; align-items: flex-start; transition: background 0.2s; }
+    .notif-item:hover { background: #f9f9f9; }
+    .notif-item.unread { background: #eef5ff; border-left: 4px solid #007bff; }
+    .icon { font-size: 24px; margin-top: 2px; }
+    .content { flex: 1; }
+    .date { font-size: 12px; color: #888; margin-bottom: 5px; }
+    .title { font-weight: bold; font-size: 16px; margin-bottom: 5px; color: #111; }
+    .message { font-size: 14px; color: #444; line-height: 1.4; }
+    .actions { margin-top: 10px; text-align: right; }
+    
+    #loading { text-align: center; padding: 40px; color: #666; font-style: italic; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>
+    All Notifications
+    <div>
+      <button class="btn btn-secondary" onclick="markAllRead()">Mark All Read</button>
+      <a href="/admin" class="btn">Back to Dashboard</a>
+    </div>
+  </h1>
+
+  <div id="loading">Loading notifications...</div>
+  <div id="notifList"></div>
+</div>
+
+<script>
+  let notifications = [];
+
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    })[c]);
+  }
+
+  async function api(path, options={}) {
+    const token = localStorage.getItem('adminToken');
+    if(!token) { window.location.href='/admin-login'; return; }
+    const headers = { 'Authorization': 'Bearer ' + token, ...options.headers };
+    if(options.body) headers['Content-Type'] = 'application/json';
+    const res = await fetch(path, { ...options, headers });
+    if(res.status === 401) { window.location.href='/admin-login'; throw new Error('Auth failed'); }
+    return res.json();
+  }
+
+  async function loadNotifications() {
+    try {
+      const data = await api('/api/notifications?audience=admin');
+      notifications = data.notifications || [];
+      render();
+    } catch (e) {
+      document.getElementById('loading').textContent = 'Error loading notifications.';
+    }
+  }
+
+  function render() {
+    const list = document.getElementById('notifList');
+    document.getElementById('loading').style.display = 'none';
+
+    if (notifications.length === 0) {
+      list.innerHTML = '<div style="padding: 20px; text-align: center; color: #888;">No notifications available.</div>';
+      return;
+    }
+
+    list.innerHTML = notifications.map(n => `
+      <div class="notif-item ${n.read ? '' : 'unread'}" id="notif-${n._id || n.id}">
+        <div class="icon">🔔</div>
+        <div class="content">
+          <div class="date">${new Date(n.created_at).toLocaleString()}</div>
+          <div class="title">${escapeHtml(n.title || 'Notification')}</div>
+          <div class="message">${escapeHtml(n.message)}</div>
+          <div class="actions">
+            ${!n.read ? `<button class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="markAsRead('${n._id || n.id}')">Mark Read</button>` : ''}
+            <button class="btn btn-danger" style="font-size: 11px; padding: 4px 8px;" onclick="deleteNotification('${n._id || n.id}')">Delete</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function markAsRead(id) {
+    const n = notifications.find(x => (x._id || x.id) === id);
+    if(n && !n.read) {
+      n.read = true;
+      render();
+      try { await api('/api/notifications/' + id + '/read', { method: 'PUT' }); } catch(e){}
+    }
+  }
+
+  async function markAllRead() {
+    const unread = notifications.filter(n => !n.read);
+    unread.forEach(n => n.read = true);
+    render();
+    for (const n of unread) {
+      try { await api('/api/notifications/' + (n._id || n.id) + '/read', { method: 'PUT' }); } catch(e){}
+    }
+  }
+
+  async function deleteNotification(id) {
+    if(!confirm('Delete this notification?')) return;
+    try {
+      await api('/api/notifications/' + id, { method: 'DELETE' });
+      notifications = notifications.filter(x => (x._id || x.id) !== id);
+      render();
+    } catch(e) {}
+  }
+
+  loadNotifications();
+</script>
+
+</body>
+</html>
