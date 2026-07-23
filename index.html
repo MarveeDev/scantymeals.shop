@@ -327,8 +327,9 @@
     <h3 class="text-lg font-bold">Notifications</h3>
     <button onclick="toggleNotif()" class="text-2xl leading-none" aria-label="Close">×</button>
   </div>
-  <div class="p-2 border-b text-right">
-    <button onclick="markAllNotifsRead()" class="text-sm text-blue-600 font-medium">Mark all read</button>
+  <div class="p-2 border-b flex justify-between items-center bg-gray-50">
+    <button onclick="window.location.href='/notifications'" class="text-sm text-blue-600 font-medium hover:underline">View all notifications</button>
+    <button onclick="markAllNotifsRead()" class="text-sm text-blue-600 font-medium hover:underline">Mark all read</button>
   </div>
   <div id="notifList" class="flex-1 overflow-y-auto"></div>
 </aside>
@@ -415,12 +416,15 @@ function updateNotifUI() {
   }
 
   list.innerHTML = customerNotifications.map(n => `
-    <div class="notif-item ${n.read ? '' : 'unread'}" onclick="openCustomerNotifModal('${n._id || n.id}')">
-      <div class="text-xs text-gray-500">${new Date(n.created_at).toLocaleString()}</div>
-      <div class="font-bold mt-1 text-gray-800">${escapeHtml(n.title || 'Notification')}</div>
-      <div class="mt-1 text-gray-700 whitespace-nowrap overflow-hidden text-ellipsis">${escapeHtml(n.message)}</div>
-      <div class="mt-2 text-right">
-        <button onclick="deleteCustomerNotif('${n._id || n.id}'); event.stopPropagation()" class="text-xs text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer">Delete</button>
+    <div class="notif-item ${n.read ? '' : 'unread'} flex gap-3 items-start" onclick="openCustomerNotifModal('${n._id || n.id}')">
+      <div class="text-xl mt-1">🔔</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs text-gray-500">${new Date(n.created_at).toLocaleString()}</div>
+        <div class="font-bold mt-1 text-gray-800">${escapeHtml(n.title || 'Notification')}</div>
+        <div class="mt-1 text-gray-700 whitespace-nowrap overflow-hidden text-ellipsis">${escapeHtml(n.message)}</div>
+        <div class="mt-2 text-right">
+          <button onclick="deleteCustomerNotif('${n._id || n.id}'); event.stopPropagation()" class="text-xs text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer">Delete</button>
+        </div>
       </div>
     </div>
   `).join('');
@@ -463,11 +467,12 @@ window.markNotifRead = async function(id) {
 
 async function markAllNotifsRead() {
   const unread = customerNotifications.filter(n => !n.read);
+  unread.forEach(n => n.read = true);
+  updateNotifUI(); // Update UI immediately
+  
   for (const n of unread) {
-    n.read = true;
     try { await fetch(API_BASE + '/api/notifications/' + (n._id || n.id) + '/read', { method: 'PUT' }); } catch(e){}
   }
-  updateNotifUI();
 }
 
 function initCustomerSocket() {

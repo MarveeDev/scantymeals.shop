@@ -553,6 +553,14 @@ def get_profile():
 def index():
     return send_from_directory('.', 'index.html')
 
+@app.route('/notifications')
+def notifications_page():
+    return send_from_directory('.', 'notifications.html')
+
+@app.route('/admin-notifications')
+def admin_notifications_page():
+    return send_from_directory('.', 'admin-notifications.html')
+
 
 @app.route('/IMG/<path:filename>')
 def serve_img(filename):
