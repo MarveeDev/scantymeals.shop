@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>ScantyMeals Staff Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/scanty-theme.css">
+  <style>
+    body{background:#F7F1E8}
+  </style>
+</head>
+<body>
+  <div class="scanty-auth-wrap">
+    <div class="scanty-auth-card scanty-card">
+      <div class="scanty-brand-mark">
+        <div class="scanty-brand-name">ScantyMeals</div>
+        <div style="color:#6b6460;font-size:13px">Staff Portal</div>
+      </div>
+
+      <form id="loginForm">
+        <label class="scanty-label" for="username">Username</label>
+        <input class="scanty-input" id="username" name="username" autocomplete="username" required placeholder="your username" />
+
+        <label class="scanty-label" for="password" style="margin-top:14px">Password</label>
+        <input class="scanty-input" id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" />
+
+        <button type="submit" class="scanty-btn scanty-btn--primary" style="width:100%;margin-top:18px">Login</button>
+
+        <div id="err" class="scanty-badge scanty-badge--suspended" style="display:none;margin-top:14px;width:100%;white-space:normal;text-align:left"></div>
+        <div class="hint" style="font-size:12px;color:#6b6460;margin-top:10px;line-height:1.4">
+          Staff accounts are provisioned by an administrator. Contact your manager if you cannot sign in.
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = (location.hostname.endsWith('onrender.com') || location.hostname === 'localhost')
+      ? '' // same-origin
+      : 'https://scantymeals-shop-1.onrender.com';
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const errEl = document.getElementById('err');
+      errEl.style.display = 'none';
+      errEl.textContent = '';
+
+      try {
+        const res = await fetch(API_BASE + '/api/auth/staff-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          errEl.textContent = data?.message || ('Staff login failed (HTTP ' + res.status + ')');
+          errEl.style.display = 'block';
+          return;
+        }
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user || {}));
+        window.location.href = '/staff';
+      } catch (ex) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

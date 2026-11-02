@@ -1,0 +1,167 @@
+/* ============================================================================
+   SCANTYMEALS V2 — Design System
+   Official colours:
+     Deep Burgundy  #641D28
+     Natural Green  #39845B
+     Warm Cream     #F7F1E8
+     Charcoal       #292522
+     Pure White     #FFFFFF
+   ========================================================================== */
+
+:root {
+  --burgundy: #641D28;
+  --burgundy-dark: #4A151E;
+  --green: #39845B;
+  --green-dark: #2C6A48;
+  --cream: #F7F1E8;
+  --charcoal: #292522;
+  --white: #FFFFFF;
+
+  --brand: var(--burgundy);
+  --brand-dark: var(--burgundy-dark);
+  --success: var(--green);
+  --success-dark: var(--green-dark);
+  --bg: var(--cream);
+  --surface: var(--white);
+  --text: var(--charcoal);
+  --muted: #6b6460;
+  --border: #e7ddd0;
+  --danger: #b3261e;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--burgundy); }
+
+/* ---------------------------------------------------------------------------
+   Buttons
+   ------------------------------------------------------------------------- */
+.scanty-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.2;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .18s ease, opacity .18s ease;
+}
+.scanty-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.scanty-btn--primary { background: var(--burgundy); color: #fff; }
+.scanty-btn--primary:hover:not(:disabled) { background: var(--burgundy-dark); }
+
+.scanty-btn--secondary { background: var(--green); color: #fff; }
+.scanty-btn--secondary:hover:not(:disabled) { background: var(--green-dark); }
+
+.scanty-btn--ghost { background: transparent; color: var(--burgundy); border: 1px solid var(--border); }
+.scanty-btn--ghost:hover:not(:disabled) { background: rgba(100, 29, 40, .06); }
+
+.scanty-btn--danger { background: var(--danger); color: #fff; }
+.scanty-btn--danger:hover:not(:disabled) { background: #93201a; }
+
+/* ---------------------------------------------------------------------------
+   Surfaces & forms
+   ------------------------------------------------------------------------- */
+.scanty-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(41, 37, 34, .06);
+}
+
+.scanty-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: var(--charcoal);
+}
+
+.scanty-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+  color: var(--text);
+  outline: none;
+}
+.scanty-input:focus {
+  border-color: var(--burgundy);
+  box-shadow: 0 0 0 3px rgba(100, 29, 40, .10);
+}
+
+/* ---------------------------------------------------------------------------
+   Badges
+   ------------------------------------------------------------------------- */
+.scanty-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.scanty-badge--active { background: rgba(57, 132, 91, .14); color: var(--green-dark); }
+.scanty-badge--suspended { background: rgba(179, 38, 30, .12); color: #9d1c15; }
+.scanty-badge--role { background: rgba(100, 29, 40, .10); color: var(--burgundy); }
+
+/* ---------------------------------------------------------------------------
+   Layout helpers
+   ------------------------------------------------------------------------- */
+.scanty-shell { width: min(1160px, calc(100% - 2rem)); margin: 0 auto; }
+
+.scanty-topbar {
+  background: var(--burgundy);
+  color: #fff;
+  padding: 14px 0;
+}
+.scanty-topbar a { color: #fff; }
+
+.scanty-auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.scanty-auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px;
+}
+
+.scanty-brand-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.scanty-brand-mark .scanty-brand-name {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 800;
+  font-size: 26px;
+  color: var(--burgundy);
+  margin: 0;
+}
+
+.scanty-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.scanty-table th, .scanty-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+.scanty-table th { background: var(--cream); color: var(--charcoal); font-weight: 600; }

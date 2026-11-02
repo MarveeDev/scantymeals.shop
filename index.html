@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Scanty Meals delivers fresh, premium fried rice and noodles fast in Antwima Mponua, Mpasatia-junction. Order online for quick delivery.">
-  <meta name="keywords" content="Scanty Meals, fried rice, noodles, food delivery, Antwima Mponua, Mpasatia-junction, Ghana, online food order">
+  <meta name="description" content="ScantyMeals serves fresh fried rice, spaghetti and Indomie in Mpasatia Junction, Kumasi, Ghana. Order online for fast delivery or pickup.">
+  <meta name="keywords" content="ScantyMeals, fried rice, spaghetti, indomie, food delivery, Mpasatia Junction, Kumasi, Ghana, online food order">
   <meta name="author" content="Scanty Meals">
   <meta name="robots" content="index, follow">
-  <meta name="theme-color" content="#FF6B35">
+  <meta name="theme-color" content="#641D28">
   <link rel="canonical" href="https://scantymeals.shop/">
 
   <!-- FIX (B1): removed malformed `<link rel=""icon"...>` line; correct favicon links below -->
@@ -17,21 +17,22 @@
   <link rel="apple-touch-icon" href="/IMG/favicon.jpeg">
 
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Scanty Meals | Premium Fried Rice Delivery">
-  <meta property="og:description" content="Order premium fried rice and noodles from Scanty Meals with fast delivery in Antwima Mponua, Mpasatia-junction.">
+  <meta property="og:title" content="ScantyMeals | Fresh Meals in Kumasi">
+  <meta property="og:description" content="Order fresh fried rice, spaghetti and Indomie from ScantyMeals — Mpasatia Junction, Kumasi, Ghana.">
   <meta property="og:url" content="https://scantymeals.shop/">
   <meta property="og:site_name" content="Scanty Meals">
   <meta property="og:image" content="https://scantymeals.shop/IMG/web%20logo.jpeg">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Scanty Meals | Premium Fried Rice Delivery">
-  <meta name="twitter:description" content="Fresh fried rice and noodles delivered fast by Scanty Meals in Antwima Mponua, Mpasatia-junction.">
+  <meta name="twitter:title" content="ScantyMeals | Fresh Meals in Kumasi">
+  <meta name="twitter:description" content="Fresh fried rice, spaghetti and Indomie delivered fast by ScantyMeals — Mpasatia Junction, Kumasi.">
   <meta name="twitter:image" content="https://scantymeals.shop/IMG/favicon.jpeg">
 
   <meta name="application-name" content="Scanty Meals">
   <link rel="manifest" href="/site.webmanifest">
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/scanty-theme.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
 
   <script type="application/ld+json">
@@ -41,15 +42,16 @@
   {"@context":"https://schema.org","@type":"Organization","name":"Scanty Meals","url":"https://scantymeals.shop/","logo":"https://scantymeals.shop/IMG/web%20logo.jpeg"}
   </script>
 
-  <title>Scanty Meals - Premium Fried Rice Delivery</title>
+  <title>ScantyMeals - Fresh Fried Rice, Spaghetti &amp; Indomie in Kumasi</title>
 
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            primary: '#FF6B35', secondary: '#F7931E',
-            accent: '#FFD60A', dark: '#1A1A1A', light: '#F5F5F5',
+            burgundy: '#641D28', green: '#39845B', cream: '#F7F1E8', charcoal: '#292522',
+            primary: '#641D28', secondary: '#39845B',
+            accent: '#F7F1E8', dark: '#292522', light: '#F7F1E8',
           },
           fontFamily: {
             display: ['Playfair Display', 'serif'],
@@ -63,7 +65,7 @@
   <style>
     * { box-sizing: border-box; }
     html, body { max-width: 100%; overflow-x: hidden; }
-    body { font-family: 'Poppins', sans-serif; background: #f9f9f9; }
+    body { font-family: 'Poppins', sans-serif; background: #F7F1E8; color: #292522; }
 
     .page-shell { width: min(1160px, calc(100% - 2rem)); margin: 0 auto; }
     @media (min-width: 768px) { .page-shell { width: min(1160px, calc(100% - 3rem)); } }
@@ -71,81 +73,102 @@
 
     #splash {
       position: fixed; inset: 0; z-index: 9999;
-      background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+      background: linear-gradient(135deg, #641D28 0%, #39845B 100%);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       transition: opacity .5s ease;
     }
     #splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-
     @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
-    nav { background: white; box-shadow: 0 2px 10px rgba(0,0,0,.08); position: sticky; top: 0; z-index: 100; }
-    .nav-link { transition: color .3s; color: #666; font-weight: 500; }
-    .nav-link:hover, .nav-link.active { color: #FF6B35; }
+    /* --- Navigation --- */
+    nav { background: #641D28; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 14px rgba(41,37,34,.18); }
+    .nav-brand { color: #fff; }
+    .nav-link { transition: color .3s; color: #e8dccf; font-weight: 500; }
+    .nav-link:hover, .nav-link.active { color: #fff; }
+    .nav-icon { color: #F7F1E8; }
 
-    .hero {
-      background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
-      color: white;
-    }
-    .hero h1, .hero p { color: white; }
-
-    .menu-card {
-      background: white; border-radius: 16px; overflow: hidden;
-      transition: all .3s cubic-bezier(.34,1.56,.64,1);
-      box-shadow: 0 4px 15px rgba(0,0,0,.08);
-    }
-    .menu-card:hover { transform: translateY(-8px); box-shadow: 0 12px 30px rgba(255,107,53,.2); }
-    .menu-card img { width: 100%; height: 220px; object-fit: cover; transition: transform .4s; }
-    .menu-card:hover img { transform: scale(1.08); }
+    /* --- Hero --- */
+    .hero { background: #F7F1E8; }
+    .hero-eyebrow { color: #39845B; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; font-size: 13px; }
+    .hero-photo { border-radius: 20px; overflow: hidden; box-shadow: 0 24px 60px rgba(100,29,40,.22); }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
     .btn-primary {
-      background: #FF6B35; color: white; font-weight: 600;
-      transition: background .2s;
+      background: #641D28; color: #fff; font-weight: 600; border: none; cursor: pointer;
+      transition: background .2s, transform .1s;
     }
-    .btn-primary:hover { background: #e85a25; }
+    .btn-primary:hover { background: #4A151E; }
     .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-secondary { background: #39845B; color: #fff; font-weight: 600; border: none; cursor: pointer; transition: background .2s; }
+    .btn-secondary:hover { background: #2C6A48; }
+
+    .chip { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #e7ddd0; color: #292522; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+
+    /* --- Menu --- */
+    .section-title { font-family: 'Playfair Display', Georgia, serif; font-weight: 800; color: #292522; }
+    .menu-card {
+      background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #efe7db;
+      transition: transform .25s ease, box-shadow .25s ease;
+      box-shadow: 0 4px 15px rgba(41,37,34,.06);
+      display: flex; flex-direction: column;
+    }
+    .menu-card:hover { transform: translateY(-6px); box-shadow: 0 16px 36px rgba(100,29,40,.16); }
+    .menu-card .menu-img { width: 100%; height: 200px; object-fit: cover; display: block; }
+    .menu-card .menu-body { padding: 18px; display: flex; flex-direction: column; flex: 1; }
+    .menu-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #39845B; background: rgba(57,132,91,.1); padding: 3px 10px; border-radius: 999px; margin-bottom: 8px; }
+    .menu-price { color: #39845B; font-weight: 700; font-size: 20px; }
 
     .page { display: none; animation: fadeIn .3s ease; }
     .page.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     .cart-badge {
-      background: #FF6B35; color: white; border-radius: 50%;
+      background: #39845B; color: #fff; border-radius: 50%;
       width: 22px; height: 22px; font-size: 12px;
       display: flex; align-items: center; justify-content: center;
       position: absolute; top: -6px; right: -6px;
       font-weight: 700; animation: pulse .5s;
     }
 
-    /* Cart drawer */
-    .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; display: none; }
+    /* --- Cart drawer --- */
+    .drawer-backdrop { position: fixed; inset: 0; background: rgba(41,37,34,.45); z-index: 200; display: none; }
     .drawer-backdrop.open { display: block; }
     .cart-drawer {
       position: fixed; top: 0; right: 0; height: 100vh; width: min(420px, 100%);
-      background: white; z-index: 201; transform: translateX(100%);
+      background: #fff; z-index: 201; transform: translateX(100%);
       transition: transform .3s ease; display: flex; flex-direction: column;
-      box-shadow: -8px 0 30px rgba(0,0,0,.15);
+      box-shadow: -8px 0 30px rgba(41,37,34,.2);
     }
     .cart-drawer.open { transform: translateX(0); }
-    .cart-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eee; }
-    .cart-item img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
+    .cart-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #efe7db; }
+    .cart-item img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; }
 
-    /* Toast */
+    /* --- Toast --- */
     .toast {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      background: #1a1a1a; color: white; padding: 12px 20px; border-radius: 8px;
-      z-index: 300; font-weight: 500; opacity: 0; transition: opacity .3s;
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #292522; color: #fff; padding: 12px 22px; border-radius: 10px;
+      z-index: 300; font-weight: 500; opacity: 0; transition: opacity .3s; box-shadow: 0 8px 24px rgba(41,37,34,.25);
     }
     .toast.show { opacity: 1; }
 
-    /* Notifications */
-    .notif-bell { position: relative; padding: 8px; cursor: pointer; color: #4b5563; }
-    .notif-badge { position: absolute; top: 2px; right: 2px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-    .notif-drawer { position: fixed; top: 0; right: 0; height: 100vh; width: min(400px, 100%); background: white; z-index: 201; transform: translateX(100%); transition: transform .3s ease; display: flex; flex-direction: column; box-shadow: -8px 0 30px rgba(0,0,0,.15); }
+    /* --- Footer --- */
+    .footer { background: #292522; color: #e8dccf; }
+    .footer a { color: #e8dccf; text-decoration: none; }
+    .footer a:hover { color: #fff; }
+    .footer-title { color: #fff; font-weight: 700; }
+
+    /* --- Notifications --- */
+    .notif-bell { position: relative; padding: 8px; cursor: pointer; color: #F7F1E8; }
+    .notif-badge { position: absolute; top: 2px; right: 2px; background: #39845B; color: #fff; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    .notif-drawer { position: fixed; top: 0; right: 0; height: 100vh; width: min(400px, 100%); background: #fff; z-index: 201; transform: translateX(100%); transition: transform .3s ease; display: flex; flex-direction: column; box-shadow: -8px 0 30px rgba(41,37,34,.2); }
     .notif-drawer.open { transform: translateX(0); }
-    .notif-item { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; }
-    .notif-item.unread { background: #f4f8ff; border-left: 4px solid #ef4444; }
-    .notif-item:hover { background: #f9f9f9; }
+    .notif-item { padding: 12px; border-bottom: 1px solid #efe7db; font-size: 14px; cursor: pointer; }
+    .notif-item.unread { background: #f4f8ff; border-left: 4px solid #39845B; }
+    .notif-item:hover { background: #faf7f1; }
+
+    /* Spinner */
+    .spinner { width: 22px; height: 22px; border: 3px solid #e7ddd0; border-top-color: #641D28; border-radius: 50%; animation: spin .8s linear infinite; display: inline-block; vertical-align: -5px; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 
@@ -160,39 +183,39 @@
 
 <div id="app">
   <nav>
-    <div class="page-shell py-3 sm:py-4 flex items-center justify-between gap-2">
-      <a href="#menu" onclick="return goToPage('menu', event)" class="flex items-center gap-3">
-        <img src="/IMG/web%20logo.jpeg" alt="Scanty Logo" style="width:50px;height:50px;object-fit:contain">
+    <div class="page-shell py-3 flex items-center justify-between gap-2">
+      <a href="#menu" onclick="return goToPage('menu', event)" class="flex items-center gap-3 nav-brand">
+        <img src="/IMG/web%20logo.jpeg" alt="ScantyMeals logo" style="width:46px;height:46px;object-fit:contain;border-radius:50%">
         <div>
-          <p class="font-display text-lg sm:text-2xl font-bold text-primary leading-tight m-0">Scanty Meals</p>
-          <p class="hidden sm:block text-xs text-gray-500">Fresh • Delicious • Fast</p>
+          <p class="font-display text-lg sm:text-xl font-bold leading-tight m-0 text-white">ScantyMeals</p>
+          <p class="hidden sm:block text-xs" style="color:#e8dccf">Fresh • Delicious • Fast</p>
         </div>
       </a>
 
       <div class="hidden md:flex items-center gap-8">
         <a href="#menu" class="nav-link" onclick="return goToPage('menu', event)">Menu</a>
+        <a href="#bulk" class="nav-link" onclick="return goToPage('bulk', event)">Bulk Orders</a>
         <a href="#orders" class="nav-link" onclick="return goToPage('orders', event)">My Orders</a>
         <a id="adminLink" href="/admin" class="nav-link" style="display:none">Admin</a>
       </div>
 
-      <div class="flex items-center gap-2 sm:gap-4">
-        <!-- Notification Bell -->
+      <div class="flex items-center gap-2 sm:gap-3">
         <button onclick="toggleNotif()" class="notif-bell" aria-label="Notifications" id="navNotifBtn" style="display:none">
-          🔔<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
           <span class="notif-badge" id="notifBadge" style="display:none">0</span>
         </button>
 
-        <button onclick="toggleCart()" class="relative p-2" aria-label="Cart">
-          <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button onclick="toggleCart()" class="relative p-2 nav-icon" aria-label="Cart">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
           </svg>
           <span class="cart-badge" id="cartBadge" style="display:none">0</span>
         </button>
 
-        <button id="loginBtn" onclick="goToPage('login', event)" class="hidden md:block px-4 py-2 bg-primary text-white font-semibold rounded-md">Sign in</button>
-        <button id="logoutBtn" onclick="logout()" class="hidden md:block px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-md" style="display:none">Logout</button>
+        <button id="loginBtn" onclick="goToPage('login', event)" class="hidden md:block px-4 py-2 btn-secondary rounded-md text-sm">Sign in</button>
+        <button id="logoutBtn" onclick="logout()" class="hidden md:block px-4 py-2 text-white font-semibold rounded-md text-sm" style="display:none;border:1px solid rgba(255,255,255,.4)">Logout</button>
 
-        <button class="md:hidden p-2 text-gray-700" onclick="toggleMobileMenu()" aria-label="Open menu">
+        <button class="md:hidden p-2 nav-icon" onclick="toggleMobileMenu()" aria-label="Open menu">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
           </svg>
@@ -200,14 +223,15 @@
       </div>
     </div>
 
-    <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-gray-100 w-full absolute shadow-lg">
+    <div id="mobileMenu" class="hidden md:hidden w-full absolute" style="background:#641D28;border-top:1px solid rgba(255,255,255,.15);box-shadow:0 8px 20px rgba(0,0,0,.2)">
       <div class="flex flex-col p-4 space-y-4">
         <a href="#menu" class="nav-link" onclick="return goToPage('menu', event, true)">Menu</a>
+        <a href="#bulk" class="nav-link" onclick="return goToPage('bulk', event, true)">Bulk Orders</a>
         <a href="#orders" class="nav-link" onclick="return goToPage('orders', event, true)">My Orders</a>
         <a id="mobileAdminLink" href="/admin" class="nav-link" style="display:none">Admin</a>
-        <div class="border-t pt-4 mt-2">
-          <button id="mobileLoginBtn" onclick="goToPage('login', event, true)" class="w-full px-4 py-2 bg-primary text-white font-semibold rounded-md">Sign in</button>
-          <button id="mobileLogoutBtn" onclick="logout()" class="w-full px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-md" style="display:none">Logout</button>
+        <div class="border-t pt-4 mt-2" style="border-color:rgba(255,255,255,.2)">
+          <button id="mobileLoginBtn" onclick="goToPage('login', event, true)" class="w-full px-4 py-2 btn-secondary text-white font-semibold rounded-md">Sign in</button>
+          <button id="mobileLogoutBtn" onclick="logout()" class="w-full px-4 py-2 text-white font-semibold rounded-md" style="display:none;border:1px solid rgba(255,255,255,.4)">Logout</button>
         </div>
       </div>
     </div>
@@ -217,21 +241,36 @@
 
     <!-- ===== MENU PAGE ===== -->
     <div id="menuPage" class="page active">
-      <div class="hero py-10 md:py-16">
-        <div class="page-shell">
-          <h1 class="font-display text-4xl sm:text-5xl md:text-6xl font-bold mb-4 leading-tight">Premium Fried Rice</h1>
-          <p class="text-base sm:text-lg max-w-md mb-6 opacity-95">Freshly cooked with the finest ingredients, delivered hot to your door</p>
-          <div class="flex gap-2 sm:gap-4 flex-wrap">
-            <div class="bg-white/20 backdrop-blur px-4 py-2 rounded-full text-sm font-semibold">⭐ 4.9 Rating</div>
-            <div class="bg-white/20 backdrop-blur px-4 py-2 rounded-full text-sm font-semibold">🕐 20-30 min</div>
-            <div class="bg-white/20 backdrop-blur px-4 py-2 rounded-full text-sm font-semibold">🔥 Hot & Fresh</div>
+      <div class="hero">
+        <div class="page-shell py-10 md:py-16">
+          <div class="grid md:grid-cols-2 gap-8 items-center">
+            <div>
+              <div class="hero-eyebrow mb-3">Mpasatia Junction • Kumasi</div>
+              <h1 class="font-display text-4xl sm:text-5xl md:text-6xl font-bold leading-tight mb-4" style="color:#641D28">Fresh meals, made with love</h1>
+              <p class="text-base sm:text-lg mb-6" style="color:#6b6460;max-width:480px">Fried rice, spaghetti and Indomie — cooked to order and delivered hot to your door in Kumasi.</p>
+              <div class="flex flex-wrap gap-3 mb-7">
+                <button onclick="scrollToMenu()" class="btn-primary px-6 py-3 rounded-lg text-sm">Order Now</button>
+                <button onclick="goToPage('bulk', event)" class="btn-secondary px-6 py-3 rounded-lg text-sm">Bulk / Event Order</button>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <span class="chip">⭐ 4.9 Rating</span>
+                <span class="chip">🕐 20–30 min</span>
+                <span class="chip">🔥 Hot &amp; Fresh</span>
+              </div>
+            </div>
+            <div class="hero-photo h-72 md:h-96">
+              <img src="/IMG/fried%20rice.jpg" alt="ScantyMeals fried rice">
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="page-shell py-12">
-        <h2 class="font-display text-3xl sm:text-4xl font-bold mb-2">Our Menu</h2>
-        <p class="text-gray-600 mb-8" id="menuCount">Loading menu items...</p>
+      <div class="page-shell py-12 md:py-16" id="menuSection">
+        <div class="text-center mb-10">
+          <div class="hero-eyebrow mb-2">Our Menu</div>
+          <h2 class="section-title text-3xl sm:text-4xl">Delicious every day</h2>
+          <p class="mt-3" style="color:#6b6460" id="menuCount">Loading menu items...</p>
+        </div>
         <div id="menuContainer" class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6 xl:gap-8"></div>
       </div>
     </div>
@@ -246,22 +285,34 @@
             <div id="checkoutItems" class="bg-white rounded-lg p-4 shadow"></div>
             <div class="mt-4 text-right text-xl font-bold">Total: ₵<span id="checkoutTotal">0.00</span></div>
           </div>
-          <form id="checkoutForm" class="bg-white rounded-lg p-6 shadow space-y-4">
-            <h3 class="text-xl font-semibold mb-2">Delivery details</h3>
+          <form id="checkoutForm" class="bg-white rounded-xl p-6 shadow space-y-4">
+            <h3 class="text-xl font-bold mb-1" style="color:#292522">Delivery details</h3>
+            <p class="text-xs mb-2" style="color:#6b6460">How would you like to receive your order?</p>
             <div>
-              <label class="block text-sm font-medium mb-1">Name *</label>
-              <input name="customer_name" required class="w-full border rounded-lg px-3 py-2" placeholder="Your full name">
+              <label class="block text-sm font-medium mb-1" style="color:#292522">Name *</label>
+              <input name="customer_name" required class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="Your full name">
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1">Phone *</label>
-              <input name="customer_phone" required class="w-full border rounded-lg px-3 py-2" placeholder="0244123456">
+              <label class="block text-sm font-medium mb-1" style="color:#292522">Phone *</label>
+              <input name="customer_phone" type="tel" required class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="0242292939">
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1">Delivery location *</label>
-              <input name="customer_location" required class="w-full border rounded-lg px-3 py-2" placeholder="Mpasatia junction, …">
+              <label class="block text-sm font-medium mb-1" style="color:#292522">Delivery method</label>
+              <select id="deliveryMethod" onchange="onDeliveryMethodChange()" class="w-full border rounded-lg px-3 py-2.5 bg-white" style="border-color:#e7ddd0">
+                <option value="delivery">Delivery</option>
+                <option value="pickup">Pickup</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" style="color:#292522" id="locationLabel">Delivery location *</label>
+              <input name="customer_location" id="customerLocation" required class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="Mpasatia Junction, Kumasi">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" style="color:#292522">Order instructions (optional)</label>
+              <textarea name="order_instructions" id="orderInstructions" rows="2" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="e.g. extra spicy, call on arrival"></textarea>
             </div>
             <button type="submit" id="placeOrderBtn" class="btn-primary w-full py-3 rounded-lg">Place order</button>
-            <p class="text-xs text-gray-500">By placing an order you agree to be contacted on the phone number provided.</p>
+            <p class="text-xs" style="color:#6b6460">Cash on delivery or pickup. By placing an order you agree to be contacted on the phone number provided.</p>
           </form>
           <div id="orderStatus" class="hidden mt-4"></div>
         </div>
@@ -294,11 +345,118 @@
         </form>
       </div>
     </div>
+
+    <!-- ===== BULK ORDERS PAGE ===== -->
+    <div id="bulkPage" class="page">
+      <div class="page-shell py-10 md:py-14">
+        <div class="text-center mb-8">
+          <div class="hero-eyebrow mb-2">Bulk Food Packs</div>
+          <h2 class="section-title text-3xl sm:text-4xl">Event &amp; Bulk Food Packs</h2>
+          <p class="mt-3" style="color:#6b6460;max-width:640px;margin-left:auto;margin-right:auto">
+            Planning a programme, wedding, funeral, church event or corporate meeting? Let ScantyMeals prepare and
+            package delicious meals for your guests. Choose your meals, tell us how many packs you need, and request a quotation.
+          </p>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-8">
+          <div class="lg:col-span-2">
+            <form id="bulkForm" class="bg-white rounded-xl p-6 shadow space-y-6">
+              <div>
+                <h3 class="font-bold mb-3" style="color:#641D28">Customer information</h3>
+                <div class="grid sm:grid-cols-2 gap-4">
+                  <div><label class="block text-sm font-medium mb-1">Name / Organisation *</label>
+                    <input name="customer_name" required class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="e.g. St. James Church"></div>
+                  <div><label class="block text-sm font-medium mb-1">Contact person</label>
+                    <input name="contact_name" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="Contact name"></div>
+                  <div><label class="block text-sm font-medium mb-1">Phone *</label>
+                    <input name="phone" type="tel" required class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="0242292939"></div>
+                  <div><label class="block text-sm font-medium mb-1">Email (optional)</label>
+                    <input name="email" type="email" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="you@example.com"></div>
+                </div>
+              </div>
+
+              <div>
+                <h3 class="font-bold mb-3" style="color:#641D28">Event information</h3>
+                <div class="grid sm:grid-cols-2 gap-4">
+                  <div><label class="block text-sm font-medium mb-1">Event type *</label>
+                    <select name="event_type" class="w-full border rounded-lg px-3 py-2.5 bg-white" style="border-color:#e7ddd0">
+                      <option>Wedding</option><option>Funeral</option><option>Church Programme</option>
+                      <option>Birthday</option><option>Corporate Meeting</option><option>Conference</option>
+                      <option>School Programme</option><option>Other</option>
+                    </select></div>
+                  <div><label class="block text-sm font-medium mb-1">Event name / description</label>
+                    <input name="event_description" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="e.g. Annual conference"></div>
+                  <div><label class="block text-sm font-medium mb-1">Event date *</label>
+                    <input name="event_date" type="date" required class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0"></div>
+                  <div><label class="block text-sm font-medium mb-1">Required delivery / pickup time</label>
+                    <input name="required_time" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="e.g. 12:00 PM"></div>
+                </div>
+              </div>
+
+              <div>
+                <h3 class="font-bold mb-3" style="color:#641D28">Food packs</h3>
+                <p class="text-xs mb-3" style="color:#6b6460">Every pack is individually prepared and packaged. Enter the number of packs you need for each meal.</p>
+                <div id="bulkMeals" class="space-y-3"></div>
+                <div class="mt-3 text-right text-sm font-semibold">Total packs: <span id="bulkTotalPacks">0</span></div>
+              </div>
+
+              <div>
+                <h3 class="font-bold mb-3" style="color:#641D28">Fulfilment</h3>
+                <div class="grid sm:grid-cols-2 gap-4">
+                  <div><label class="block text-sm font-medium mb-1">Delivery or pickup *</label>
+                    <select name="fulfillment" id="bulkFulfillment" onchange="onBulkFulfillmentChange()" class="w-full border rounded-lg px-3 py-2.5 bg-white" style="border-color:#e7ddd0">
+                      <option value="delivery">Delivery</option><option value="pickup">Pickup</option>
+                    </select></div>
+                  <div id="bulkAddressWrap"><label class="block text-sm font-medium mb-1">Delivery address</label>
+                    <input name="delivery_address" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="Delivery address"></div>
+                </div>
+                <div class="mt-4"><label class="block text-sm font-medium mb-1">Special instructions / notes</label>
+                  <textarea name="instructions" rows="3" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="Any food preparation or delivery notes"></textarea></div>
+              </div>
+
+              <button type="submit" id="bulkSubmitBtn" class="btn-primary w-full py-3 rounded-lg">Request Bulk Food Packs</button>
+              <p class="text-xs" style="color:#6b6460">This sends a quotation request only — no payment is taken now. ScantyMeals will review and provide a quotation.</p>
+              <div id="bulkStatus"></div>
+            </form>
+          </div>
+
+          <div>
+            <h3 class="font-bold mb-3" style="color:#641D28">My bulk orders</h3>
+            <div id="myBulkList" class="space-y-3"><div style="color:#6b6460">Sign in (place an order) to track your bulk requests.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <footer class="bg-dark text-white py-8 mt-12">
-    <div class="page-shell text-center text-sm opacity-80">
-      © <span id="footerYear"></span> Scanty Meals — Antwima Mponua, Mpasatia-junction
+  <footer class="footer py-12 mt-16">
+    <div class="page-shell">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <img src="/IMG/web%20logo.jpeg" alt="ScantyMeals" style="width:40px;height:40px;object-fit:contain;border-radius:50%">
+            <span class="footer-title text-lg">ScantyMeals</span>
+          </div>
+          <p class="text-sm" style="color:#c9bfb4">Fresh, delicious and fast — fried rice, spaghetti and Indomie delivered across Kumasi.</p>
+        </div>
+        <div>
+          <div class="footer-title mb-3">Contact</div>
+          <ul class="space-y-2 text-sm" style="list-style:none;padding:0;margin:0">
+            <li>📍 Mpasatia Junction, Kumasi, Ghana</li>
+            <li>📞 <a href="tel:0242292939">0242292939</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-title mb-3">Hours</div>
+          <ul class="space-y-2 text-sm" style="list-style:none;padding:0;margin:0">
+            <li>Mon – Sun</li>
+            <li>Open daily • Fresh &amp; hot</li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-10 pt-6 text-center text-sm" style="border-top:1px solid rgba(255,255,255,.12);color:#a89f96">
+        © <span id="footerYear"></span> ScantyMeals — Mpasatia Junction, Kumasi, Ghana
+      </div>
     </div>
   </footer>
 </div>
@@ -360,6 +518,7 @@ const USER_KEY = 'user';
 const ORDERS_KEY = 'scanty_local_orders';
 
 let MENU_ITEMS_CACHE = []; // populated by fetchMenu()
+let checkoutIdempotencyKey = null;
 
 // Customer Notifications Logic
 let notifSocket = null;
@@ -513,6 +672,21 @@ function getUser() {
   catch { return null; }
 }
 function getToken() { return localStorage.getItem(TOKEN_KEY); }
+async function establishCustomerSession(name, phone) {
+  if (!phone) return;
+  try {
+    const res = await fetch(API_BASE + '/api/auth/phone-name', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name || '', phone: phone }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data && data.token) {
+      localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user || {}));
+    }
+  } catch (e) { console.warn('establishCustomerSession failed:', e); }
+}
 function getCart() {
   try { return JSON.parse(localStorage.getItem(CART_KEY) || '{}'); }
   catch { return {}; }
@@ -534,6 +708,7 @@ function addToCart(mealId) {
   const id = String(mealId);
   const meal = MENU_ITEMS_CACHE.find(m => String(m.id) === id);
   if (!meal) { showToast('Item unavailable'); return; }
+  if (meal.available === false) { showToast(meal.name + ' is currently unavailable'); return; }
   const cart = getCart();
   const existing = cart[id];
   cart[id] = {
@@ -610,7 +785,7 @@ function goToPage(pageId, event, closeMobile) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const map = {
     menu: 'menuPage', checkout: 'checkoutPage',
-    orders: 'ordersPage', login: 'loginPage',
+    orders: 'ordersPage', login: 'loginPage', bulk: 'bulkPage',
   };
   const el = $(map[pageId] || 'menuPage');
   if (el) el.classList.add('active');
@@ -651,42 +826,43 @@ function renderMenu() {
   const container = $('menuContainer');
   const countEl = $('menuCount');
 
-  // If DOM is missing, stop early (prevents silent no-op)
   if (!container || !countEl) return;
 
   const items = Array.isArray(MENU_ITEMS_CACHE) ? MENU_ITEMS_CACHE : [];
 
-  // If no items, show error
   if (!items.length) {
     countEl.textContent = 'Unable to load menu. Please refresh.';
     container.innerHTML = '';
     return;
   }
 
-  // Update UI: hide loading indicator
-  countEl.textContent = `Menu (${items.length} items)`;
+  countEl.textContent = '';
 
-  // Render all meals
   container.innerHTML = items.map((meal) => {
     const img = meal.image ? meal.image : '/IMG/menu_1.jpg';
     const priceNum = Number(meal.price ?? 0);
     const priceText = Number.isFinite(priceNum) ? priceNum.toFixed(2) : '0.00';
     const mealId = meal.id ?? '';
+    const unavailable = meal.available === false;
 
     return `
-      <div class="menu-card overflow-hidden">
-        <img src="${escapeHtml(img)}" alt="${escapeHtml(meal.name || 'Meal')}">
-        <div class="p-5">
-          <h3 class="text-lg font-bold mb-1">${escapeHtml(meal.name || 'Meal')}</h3>
-          <p class="text-gray-600 text-sm mb-3">${escapeHtml(meal.description || '')}</p>
-          <div class="flex items-center justify-between">
-            <span class="font-semibold text-primary">₵${priceText}</span>
+      <div class="menu-card">
+        <img class="menu-img" src="${escapeHtml(img)}" alt="${escapeHtml(meal.name || 'Meal')}">
+        <div class="menu-body">
+          <div>
+            <span class="menu-tag">${escapeHtml(meal.category || 'Meal')}</span>
+            <h3 class="text-lg font-bold mb-1" style="color:#292522">${escapeHtml(meal.name || 'Meal')}</h3>
+            <p class="mb-4" style="color:#6b6460;font-size:14px">${escapeHtml(meal.description || '')}</p>
+          </div>
+          <div class="flex items-center justify-between mt-auto">
+            <span class="menu-price">₵${priceText}</span>
             <button
-              class="btn-primary px-4 py-2 rounded-lg"
+              class="btn-primary px-4 py-2 rounded-lg text-sm"
               type="button"
+              ${unavailable ? 'disabled' : ''}
               onclick="addToCart(${JSON.stringify(mealId)})"
             >
-              Add
+              ${unavailable ? 'Unavailable' : 'Add to cart'}
             </button>
           </div>
         </div>
@@ -705,15 +881,24 @@ async function loadMyOrders() {
     return;
   }
 
+  // "My Orders" requires a verified customer session.
+  if (!getToken()) {
+    await establishCustomerSession(localStorage.getItem('customerName') || '', phone);
+  }
+  if (!isVerified()) {
+    listEl.innerHTML = verifyPromptHtml();
+    return;
+  }
+
   listEl.innerHTML = '<div class="text-gray-500">Loading your orders...</div>';
 
   try {
-    console.log('[MyOrders] phone=', phone);
+    const headers = {};
+    const token = getToken();
+    if (token) headers['Authorization'] = 'Bearer ' + token;
 
     const url = API_BASE + '/api/my-orders?phone=' + encodeURIComponent(phone);
-    console.log('[MyOrders] fetch=', url);
-
-    const res = await fetch(url);
+    const res = await fetch(url, { headers });
 
     // IMPORTANT: don’t swallow parse errors; show them in UI + console
     const json = await res.json();
@@ -781,7 +966,7 @@ async function loadMyOrders() {
 
 async function fetchMenu() {
   const countEl = $('menuCount');
-  if (countEl) countEl.textContent = 'Loading menu items...';
+  if (countEl) countEl.innerHTML = '<span class="spinner"></span>Loading menu items...';
   try {
     MENU_ITEMS_CACHE = await fetchMenuFromApi();
     renderMenu();
@@ -802,8 +987,13 @@ window.addEventListener('DOMContentLoaded', () => {
   updateCartCount();
   updateCartUI();
   fetchMenu();
+  loadBulkMenu();
+  loadMyBulkOrders();
   fetchCustomerNotifications();
   initCustomerSocket();
+
+  const bulkForm = $('bulkForm');
+  bulkForm?.addEventListener('submit', submitBulk);
 
   const checkoutForm = $('checkoutForm');
   checkoutForm?.addEventListener('submit', async (event) => {
@@ -825,14 +1015,22 @@ window.addEventListener('DOMContentLoaded', () => {
       const form = event.target;
       const formData = new FormData(form);
 
+      if (!checkoutIdempotencyKey) {
+        checkoutIdempotencyKey = (window.crypto && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : ('ord-' + Date.now() + '-' + Math.random().toString(16).slice(2));
+      }
+
       const payload = {
         customer_name: formData.get('customer_name'),
         customer_phone: formData.get('customer_phone'),
         customer_location: formData.get('customer_location'),
+        delivery_method: ($('deliveryMethod') && $('deliveryMethod').value) || 'delivery',
+        order_instructions: formData.get('order_instructions') || '',
+        payment_method: 'cash',
+        idempotency_key: checkoutIdempotencyKey,
         items: cartItems.map(i => ({
           id: i.id,
-          name: i.name,
-          price: i.price,
           quantity: i.quantity
         })),
       };
@@ -918,6 +1116,10 @@ window.addEventListener('DOMContentLoaded', () => {
       if (submittedName) localStorage.setItem('customerName', submittedName);
       if (submittedPhone) localStorage.setItem('customerPhone', submittedPhone);
 
+      // Establish an authenticated customer session so "My Orders" is secure.
+      await establishCustomerSession(submittedName, submittedPhone);
+
+      checkoutIdempotencyKey = null;
       clearCart();
       // refresh orders and notifications after successful checkout
       loadMyOrders?.();
@@ -940,6 +1142,291 @@ window.addEventListener('DOMContentLoaded', () => {
     
   });
 });
+function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  showToast('Signed out');
+}
+function isVerified() {
+  const u = getUser();
+  return !!(u && u.phone_verified);
+}
+function openVerifyModal() {
+  resetVerifyModal();
+  $('verifyModal').style.display = 'flex';
+}
+function closeVerifyModal() { $('verifyModal').style.display = 'none'; }
+function resetVerifyModal() {
+  stopResendCountdown();
+  $('verifyStep1').style.display = 'block';
+  $('verifyStep2').style.display = 'none';
+  $('verifyCodeInput').value = '';
+  $('verifyStatus').textContent = '';
+  $('verifyPhoneInput').value = (localStorage.getItem('customerPhone') || '').trim();
+  const btn = $('resendCodeBtn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Resend code'; }
+}
+function verifyPromptHtml() {
+  return '<div class="bg-white rounded-lg p-4 shadow text-center"><p class="mb-3" style="color:#6b6460">Verify your phone number to securely view your orders.</p><button class="btn-primary px-5 py-2 rounded-lg" onclick="openVerifyModal()">Verify phone</button></div>';
+}
+
+// ---- Phone OTP (Gonline SMS) ----
+let otpResendTimer = null;
+let otpRequestedPhone = '';
+
+function stopResendCountdown() {
+  if (otpResendTimer) { clearInterval(otpResendTimer); otpResendTimer = null; }
+}
+
+function startResendCountdown() {
+  stopResendCountdown();
+  let secs = 60;
+  const btn = $('resendCodeBtn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = 'Resend in ' + secs + 's';
+  otpResendTimer = setInterval(() => {
+    secs--;
+    if (secs <= 0) { stopResendCountdown(); btn.disabled = false; btn.textContent = 'Resend code'; return; }
+    btn.textContent = 'Resend in ' + secs + 's';
+  }, 1000);
+}
+
+async function sendOtpCode() {
+  const statusEl = $('verifyStatus');
+  statusEl.textContent = '';
+  const phone = ($('verifyPhoneInput').value || '').trim();
+  if (!phone) { statusEl.textContent = 'Enter your phone number.'; return; }
+  const btn = $('sendCodeBtn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(API_BASE + '/api/auth/otp/request', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { statusEl.textContent = data.message || 'Could not send code.'; btn.disabled = false; return; }
+    otpRequestedPhone = phone;
+    $('verifyStep1').style.display = 'none';
+    $('verifyStep2').style.display = 'block';
+    statusEl.textContent = 'Code sent to ' + phone;
+    startResendCountdown();
+  } catch (e) {
+    statusEl.textContent = 'Network error. Please try again.';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function resendOtpCode() {
+  stopResendCountdown();
+  const statusEl = $('verifyStatus');
+  statusEl.textContent = 'Sending…';
+  const phone = otpRequestedPhone || ($('verifyPhoneInput').value || '').trim();
+  const res = await fetch(API_BASE + '/api/auth/otp/request', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { statusEl.textContent = data.message || 'Could not send code.'; startResendCountdown(); return; }
+  statusEl.textContent = 'Code resent to ' + phone;
+  startResendCountdown();
+}
+
+async function verifyOtpCode() {
+  const statusEl = $('verifyStatus');
+  const code = ($('verifyCodeInput').value || '').trim();
+  const phone = otpRequestedPhone || ($('verifyPhoneInput').value || '').trim();
+  if (!code) { statusEl.textContent = 'Enter the 6-digit code.'; return; }
+  const btn = $('confirmCodeBtn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(API_BASE + '/api/auth/otp/verify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, code }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.token) {
+      statusEl.textContent = data.message || 'Verification failed.';
+      btn.disabled = false;
+      return;
+    }
+    localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.setItem(USER_KEY, JSON.stringify(data.user || {}));
+    if (phone) localStorage.setItem('customerPhone', phone);
+    stopResendCountdown();
+    closeVerifyModal();
+    showToast('Phone verified!');
+    if (typeof loadMyOrders === 'function') loadMyOrders();
+    if (typeof loadMyBulkOrders === 'function') loadMyBulkOrders();
+  } catch (e) {
+    statusEl.textContent = 'Verification failed.';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function scrollToMenu() {
+  const el = document.getElementById('menuSection');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function bulkOrderComingSoon() {
+  showToast('Bulk & event ordering coming soon — call 0242292939');
+}
+function onDeliveryMethodChange() {
+  const method = ($('deliveryMethod') && $('deliveryMethod').value) || 'delivery';
+  const loc = $('customerLocation');
+  const label = $('locationLabel');
+  if (method === 'pickup') {
+    if (loc) { loc.required = false; loc.placeholder = 'Pickup at Mpasatia Junction (optional)'; }
+    if (label) label.textContent = 'Pickup location';
+  } else {
+    if (loc) { loc.required = true; loc.placeholder = 'Mpasatia Junction, Kumasi'; }
+    if (label) label.textContent = 'Delivery location *';
+  }
+}
+
+// ===== Bulk food packs =====
+let BULK_MENU = [];
+
+async function loadBulkMenu() {
+  try {
+    const res = await fetch(API_BASE + '/api/menu');
+    const data = await res.json();
+    BULK_MENU = (data.items || []).filter(m => m.available !== false);
+  } catch (e) { BULK_MENU = []; }
+  renderBulkMeals();
+}
+
+function renderBulkMeals() {
+  const el = $('bulkMeals');
+  if (!el) return;
+  if (!BULK_MENU.length) { el.innerHTML = '<div style="color:#6b6460">Menu unavailable.</div>'; return; }
+  el.innerHTML = BULK_MENU.map(m => `
+    <div class="flex items-center justify-between gap-3 bg-gray-50 rounded-lg px-4 py-3">
+      <div>
+        <div class="font-semibold" style="color:#292522">${escapeHtml(m.name)}</div>
+        <div class="text-xs" style="color:#6b6460">₵${moneyNum(m.price)} per pack</div>
+      </div>
+      <input type="number" min="0" step="1" value="0" data-meal-id="${escapeHtml(m.id)}" data-meal-name="${escapeHtml(m.name)}"
+             oninput="updateBulkTotal()" class="w-24 border rounded-lg px-3 py-2" style="border-color:#e7ddd0">
+    </div>`).join('');
+}
+
+function moneyNum(n) { return Number(n || 0).toFixed(2); }
+
+function updateBulkTotal() {
+  const inputs = document.querySelectorAll('#bulkMeals input[type=number]');
+  let total = 0;
+  inputs.forEach(i => { total += parseInt(i.value || '0', 10) || 0; });
+  const el = $('bulkTotalPacks');
+  if (el) el.textContent = String(total);
+  return total;
+}
+
+function onBulkFulfillmentChange() {
+  const f = ($('bulkFulfillment') && $('bulkFulfillment').value) || 'delivery';
+  const wrap = $('bulkAddressWrap');
+  if (wrap) wrap.style.display = (f === 'delivery') ? 'block' : 'none';
+}
+
+async function submitBulk(e) {
+  e.preventDefault();
+  const statusEl = $('bulkStatus');
+  statusEl.innerHTML = '';
+  const form = e.target;
+  const fd = new FormData(form);
+
+  const meals = [];
+  document.querySelectorAll('#bulkMeals input[type=number]').forEach(i => {
+    const qty = parseInt(i.value || '0', 10) || 0;
+    if (qty > 0) meals.push({ meal_id: i.dataset.mealId, name: i.dataset.mealName, quantity: qty });
+  });
+  if (!meals.length) { statusEl.innerHTML = '<div style="color:#b3261e">Enter at least one meal pack quantity.</div>'; return; }
+
+  const payload = {
+    customer_name: fd.get('customer_name'),
+    contact_name: fd.get('contact_name'),
+    phone: fd.get('phone'),
+    email: fd.get('email'),
+    event_type: fd.get('event_type'),
+    event_description: fd.get('event_description'),
+    event_date: fd.get('event_date'),
+    required_time: fd.get('required_time'),
+    fulfillment: fd.get('fulfillment'),
+    delivery_address: fd.get('delivery_address'),
+    instructions: fd.get('instructions'),
+    meals,
+  };
+
+  try {
+    const res = await fetch(API_BASE + '/api/bulk-orders', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { statusEl.innerHTML = '<div style="color:#b3261e">' + escapeHtml(data.message || 'Request failed') + '</div>'; return; }
+    statusEl.innerHTML = '<div style="color:#2C6A48">Request submitted! Your reference: <b>' + escapeHtml(data.bulk_order.reference) + '</b>. We will contact you with a quotation.</div>';
+    form.reset();
+    renderBulkMeals();
+    updateBulkTotal();
+    // establish/refresh customer session so tracking works
+    const name = fd.get('customer_name');
+    const phone = fd.get('phone');
+    if (phone) { await establishCustomerSession(name, phone); localStorage.setItem('customerPhone', phone); }
+    loadMyBulkOrders();
+  } catch (err) {
+    statusEl.innerHTML = '<div style="color:#b3261e">Network error.</div>';
+  }
+}
+
+async function loadMyBulkOrders() {
+  const el = $('myBulkList');
+  if (!el) return;
+  const phone = (localStorage.getItem('customerPhone') || '').trim();
+  if (!phone) { el.innerHTML = '<div style="color:#6b6460">Place an order to track your bulk requests.</div>'; return; }
+  if (!getToken()) { await establishCustomerSession(localStorage.getItem('customerName') || '', phone); }
+  if (!isVerified()) { el.innerHTML = verifyPromptHtml(); return; }
+  const headers = {};
+  const token = getToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  try {
+    const res = await fetch(API_BASE + '/api/my-bulk-orders', { headers });
+    const data = await res.json().catch(() => ({}));
+    const list = data.bulk_orders || [];
+    if (!res.ok || !list.length) { el.innerHTML = '<div style="color:#6b6460">No bulk requests yet.</div>'; return; }
+    el.innerHTML = list.map(b => `
+      <div class="bg-white rounded-lg p-4 shadow">
+        <div class="flex justify-between items-start">
+          <div class="font-bold">${escapeHtml(b.reference)}</div>
+          <span class="scanty-badge scanty-badge--role">${escapeHtml(b.status || '')}</span>
+        </div>
+        <div class="text-sm" style="color:#6b6460">${escapeHtml(b.event_type || '')} · ${escapeHtml(b.event_date || '')}</div>
+        <div class="text-sm mt-1" style="color:#6b6460">Packs: ${b.total_packs ?? '—'} · Quotation: ₵${moneyNum(b.quotation ? b.quotation.total : (b.requested_total || 0))}</div>
+        ${b.quotation ? `<div class="text-sm mt-1" style="color:#6b6460">Paid: ₵${moneyNum(b.amount_paid)} · Balance: ₵${moneyNum(b.outstanding_balance)}</div>` : ''}
+        ${b.quotation && b.status === 'AWAITING_CUSTOMER_CONFIRMATION' ? `<button class="btn-secondary px-3 py-1 rounded text-xs mt-2" onclick="acceptBulk('${escapeHtml(b.reference)}')">Accept quotation</button> <button class="btn-primary px-3 py-1 rounded text-xs mt-2" onclick="declineBulk('${escapeHtml(b.reference)}')">Decline</button>` : ''}
+      </div>`).join('');
+  } catch (e) { el.innerHTML = '<div style="color:#6b6460">Unable to load bulk requests.</div>'; }
+}
+
+async function acceptBulk(ref) {
+  const token = getToken();
+  if (!token) { showToast('Please sign in'); return; }
+  try {
+    await fetch(API_BASE + '/api/bulk-orders/' + encodeURIComponent(ref) + '/accept', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+    loadMyBulkOrders();
+    showToast('Quotation accepted');
+  } catch (e) { showToast('Failed'); }
+}
+async function declineBulk(ref) {
+  if (!confirm('Decline this quotation?')) return;
+  const token = getToken();
+  if (!token) { showToast('Please sign in'); return; }
+  try {
+    await fetch(API_BASE + '/api/bulk-orders/' + encodeURIComponent(ref) + '/decline', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+    loadMyBulkOrders();
+    showToast('Quotation declined');
+  } catch (e) { showToast('Failed'); }
+}
 function applyAuthUI() {}
 </script>
 
@@ -1001,7 +1488,7 @@ function applyAuthUI() {}
       showToast(payload.notification.title + ': ' + payload.notification.body);
     }
   });
-  
+
   if (Notification.permission === 'granted') {
     registerFCMToken();
   }
@@ -1015,6 +1502,32 @@ function applyAuthUI() {}
     <p id="cNotifModalBody" class="text-gray-800 leading-relaxed"></p>
     <div class="mt-6 text-right">
       <button onclick="closeCustomerNotifModal()" class="btn-primary px-6 py-2 rounded-lg">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Phone verification modal -->
+<div id="verifyModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:9998; align-items:center; justify-content:center;">
+  <div style="background:#fff; width:90%; max-width:420px; padding:24px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.25);">
+    <h3 class="text-xl font-bold mb-1" style="color:#641D28">Verify your phone</h3>
+    <p class="text-xs mb-4" style="color:#6b6460">To view your orders securely, we send a one-time code to your phone.</p>
+    <div id="verifyStep1">
+      <label class="block text-sm font-medium mb-1" style="color:#292522">Phone number</label>
+      <input id="verifyPhoneInput" type="tel" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="0242292939">
+      <button onclick="sendOtpCode()" id="sendCodeBtn" class="btn-primary w-full py-3 rounded-lg mt-4">Send code</button>
+    </div>
+    <div id="verifyStep2" style="display:none">
+      <label class="block text-sm font-medium mb-1" style="color:#292522">Enter the 6-digit code</label>
+      <input id="verifyCodeInput" type="text" inputmode="numeric" maxlength="6" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="••••••">
+      <button onclick="verifyOtpCode()" id="confirmCodeBtn" class="btn-primary w-full py-3 rounded-lg mt-4">Verify</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="resendOtpCode()" id="resendCodeBtn" class="btn-primary px-4 py-2 rounded-lg" style="background:#39845B;flex:1">Resend code</button>
+        <button onclick="resetVerifyModal()" class="btn-primary px-4 py-2 rounded-lg" style="flex:1;background:#6b6460">Edit number</button>
+      </div>
+    </div>
+    <div id="verifyStatus" class="text-sm mt-3"></div>
+    <div class="text-right mt-4">
+      <button onclick="closeVerifyModal()" class="text-sm" style="color:#6b6460;background:none;border:none;cursor:pointer">Cancel</button>
     </div>
   </div>
 </div>

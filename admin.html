@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
   <title>ScantyMeals Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/scanty-theme.css">
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#1a1a1a}
+    body{font-family:'Poppins',Arial,Helvetica,sans-serif;padding:20px;color:#292522;background:#F7F1E8}
     .stat{display:inline-block;padding:10px 16px;margin:8px;background:#f5f5f5;border-radius:6px}
     table{width:100%;border-collapse:collapse;margin-top:12px}
     th,td{padding:8px;border:1px solid #ddd;text-align:left;font-size:14px}
@@ -14,7 +17,7 @@
     .btn{padding:8px 16px;border:none;border-radius:4px;cursor:pointer;font-weight:600}
     .btn-danger{background:#dc3545;color:#fff}
     .err{padding:15px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;border-radius:4px;margin-bottom:20px}
-    h1{color:#FF6B35;margin:0}
+    h1{color:#641D28;margin:0}
     .header-controls { display:flex; align-items:center; gap: 15px; }
     .notif-bell { position:relative; cursor:pointer; font-size:24px; user-select:none; }
     .notif-badge { position:absolute; top:-5px; right:-8px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:12px; font-weight:bold; display:none; }
@@ -39,6 +42,7 @@
           <div style="text-align:center; padding:10px; border-top:1px solid #ddd; font-size:12px; cursor:pointer; color:#007bff;" onclick="window.location.href='/admin-notifications'">View all notifications</div>
         </div>
       </div>
+      <a href="/staff" class="btn btn-secondary" style="padding:8px 16px;border:none;border-radius:4px;cursor:pointer;font-weight:600;background:#39845B;color:#fff;text-decoration:none">New Sale (POS)</a>
       <button id="logoutBtn" class="btn btn-danger" onclick="logout()" style="display:none">Logout</button>
     </div>
   </div>
@@ -53,16 +57,86 @@
   <div id="adminContent" style="display:none">
     <div id="stats">
       <div class="stat">Total Orders: <span id="totalOrders">-</span></div>
-      <div class="stat">Total Revenue: <span id="revenue">-</span></div>
+      <div class="stat">Paid Revenue: <span id="revenue">-</span></div>
+      <div class="stat">Pending: <span id="pendingRevenue">-</span></div>
       <div class="stat">Today's Orders: <span id="todayOrders">-</span></div>
-      <div class="stat">Today's Revenue: <span id="todayRevenue">-</span></div>
+      <div class="stat">Today's Paid: <span id="todayRevenue">-</span></div>
     </div>
 
     <h2>Orders</h2>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <label style="font-size:13px;font-weight:600">Source</label>
+      <select id="orderSourceFilter" onchange="applyOrderFilters()" style="padding:6px 10px;border:1px solid #e7ddd0;border-radius:6px">
+        <option value="">All sources</option>
+        <option value="CUSTOMER">Customer</option>
+        <option value="STAFF">Staff</option>
+        <option value="ADMIN">Admin</option>
+      </select>
+      <label style="font-size:13px;font-weight:600;margin-left:6px">Payment</label>
+      <select id="orderPaymentFilter" onchange="applyOrderFilters()" style="padding:6px 10px;border:1px solid #e7ddd0;border-radius:6px">
+        <option value="">All payments</option>
+        <option value="paid">Paid</option>
+        <option value="pending">Pending</option>
+        <option value="failed">Failed</option>
+      </select>
+    </div>
     <div id="ordersContainer">Loading...</div>
 
     <h2>Customers</h2>
     <div id="customers">Loading...</div>
+
+    <h2>Bulk &amp; Event Orders</h2>
+    <div id="bulkSummary" style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0"></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <select id="bulkStatusFilter" onchange="loadBulk()" style="padding:6px 10px;border:1px solid #e7ddd0;border-radius:6px">
+        <option value="">All statuses</option>
+        <option>REQUEST_RECEIVED</option><option>AWAITING_CUSTOMER_CONFIRMATION</option>
+        <option>CONFIRMED</option><option>PREPARING</option><option>PACKAGING</option>
+        <option>READY_FOR_PICKUP</option><option>OUT_FOR_DELIVERY</option><option>COMPLETED</option><option>CANCELLED</option>
+      </select>
+      <input id="bulkSearch" placeholder="Search ref / customer / phone" onkeyup="bulkSearchKey(event)" style="flex:1;min-width:180px;padding:6px 10px;border:1px solid #e7ddd0;border-radius:6px">
+    </div>
+    <div id="bulkList">Loading...</div>
+
+    <h2>Staff Management</h2>
+    <div id="staffSection" class="scanty-card" style="padding:16px;margin-top:8px">
+      <form id="staffCreateForm" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px">
+        <div style="flex:1;min-width:140px">
+          <label class="scanty-label" for="staffUsername">Username</label>
+          <input class="scanty-input" id="staffUsername" placeholder="e.g. kwame" required>
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label class="scanty-label" for="staffName">Full name</label>
+          <input class="scanty-input" id="staffName" placeholder="Staff name">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <label class="scanty-label" for="staffRole">Role</label>
+          <select class="scanty-input" id="staffRole">
+            <option value="staff">Staff</option>
+            <option value="admin">Admin</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label class="scanty-label" for="staffPassword">Password (optional)</label>
+          <input class="scanty-input" id="staffPassword" type="password" placeholder="Auto-generate if empty">
+        </div>
+        <button type="submit" class="scanty-btn scanty-btn--primary">Create staff</button>
+      </form>
+      <div id="staffMsg" style="margin-bottom:12px"></div>
+      <div id="staffList">Loading...</div>
+    </div>
+
+    <h2 id="settingsHeading" style="display:none">Settings</h2>
+    <div id="settingsSection" class="scanty-card" style="display:none;padding:16px;margin-top:8px">
+      <label class="scanty-label" for="adminSmsPhone">Administrator SMS notification number</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <input class="scanty-input" id="adminSmsPhone" placeholder="e.g. 0242292939" style="flex:1;min-width:200px">
+        <button class="scanty-btn scanty-btn--primary" onclick="saveAdminSms()">Save</button>
+      </div>
+      <div id="settingsMsg" style="margin-top:10px;font-size:13px"></div>
+      <p class="text-xs" style="color:#6b6460;margin-top:6px">Used for direct admin SMS alerts. Only super admins can change this.</p>
+    </div>
   </div>
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -134,9 +208,10 @@
       }
     }
 
-    async function fetchOrders() {
+    async function fetchOrders(params = {}) {
       try {
-        const res = await api('/api/orders');
+        const qs = new URLSearchParams(params).toString();
+        const res = await api('/api/orders' + (qs ? '?' + qs : ''));
         if (res.status === 401 || res.status === 403) { showUnauthorized(); throw new Error('auth'); }
         if (!res.ok) throw new Error('orders fetch failed: ' + res.status);
         return await res.json();
@@ -144,6 +219,13 @@
         console.error('fetchOrders:', e.message);
         return null;
       }
+    }
+
+    async function applyOrderFilters() {
+      const source = document.getElementById('orderSourceFilter').value;
+      const payment = document.getElementById('orderPaymentFilter').value;
+      const ord = await fetchOrders({ source, payment_status: payment });
+      if (ord && Array.isArray(ord.orders)) renderOrders([...ord.orders].reverse());
     }
 
     function escapeHtml(s) {
@@ -168,17 +250,21 @@
       const rows = orders.map(o => {
         const id = escapeHtml(o.id);
         const total = (Number(o.total) || 0).toFixed(2);
-        const statusOpts = ['Confirmed','Preparing','Ready','Out for Delivery','Delivered','Cancelled']
+        const statusOpts = ['Confirmed','Preparing','Ready','Out for Delivery','Delivered','Completed','Cancelled']
           .map(s => `<option ${o.status===s?'selected':''}>${s}</option>`).join('');
 
         const itemsOrdered = formatItemsOrdered(o.items);
+        const source = o.source || 'CUSTOMER';
+        const payment = o.payment_status || (o.payment_method === 'cash' ? 'paid' : '—');
 
         return `<tr>
           <td>${id}</td>
+          <td><span class="scanty-badge scanty-badge--role">${escapeHtml(source)}</span></td>
           <td>${escapeHtml(o.customer_name)}</td>
           <td>${escapeHtml(o.customer_phone || '')}</td>
           <td>${itemsOrdered}</td>
           <td>₵${total}</td>
+          <td>${escapeHtml(payment)}</td>
           <td id="status-${id}">${escapeHtml(o.status)}</td>
           <td><select onchange="updateStatus('${id}', this.value)">${statusOpts}</select></td>
         </tr>`;
@@ -186,7 +272,7 @@
 
       container.innerHTML = `
         <table>
-          <thead><tr><th>ID</th><th>Customer</th><th>Phone</th><th>Items Ordered</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>ID</th><th>Source</th><th>Customer</th><th>Phone</th><th>Items Ordered</th><th>Total</th><th>Payment</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
     }
@@ -216,6 +302,7 @@
       if (ord && ord.stats) {
         document.getElementById('totalOrders').textContent = ord.stats.totalOrders;
         document.getElementById('revenue').textContent = '₵' + (Number(ord.stats.totalRevenue) || 0).toFixed(2);
+        document.getElementById('pendingRevenue').textContent = '₵' + (Number(ord.stats.pendingRevenue) || 0).toFixed(2);
         document.getElementById('todayOrders').textContent = ord.stats.todayOrders;
         document.getElementById('todayRevenue').textContent = '₵' + (Number(ord.stats.todayRevenue) || 0).toFixed(2);
       }
@@ -361,6 +448,310 @@
       });
     }
 
+    // ===== Staff Management =====
+    function currentRole() {
+      try { return JSON.parse(localStorage.getItem('user') || '{}').role || 'admin'; } catch (_) { return 'admin'; }
+    }
+
+    async function loadStaff() {
+      const list = document.getElementById('staffList');
+      list.innerHTML = 'Loading...';
+      try {
+        const res = await api('/api/staff');
+        if (!res.ok) throw new Error('staff fetch failed: ' + res.status);
+        const data = await res.json();
+        const staff = data.staff || [];
+        if (!staff.length) { list.innerHTML = '<div style="color:#6b6460">No staff accounts yet.</div>'; return; }
+        const role = currentRole();
+        list.innerHTML = `
+          <table class="scanty-table">
+            <thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>${staff.map(s => {
+              const statusBadge = s.status === 'suspended'
+                ? '<span class="scanty-badge scanty-badge--suspended">suspended</span>'
+                : '<span class="scanty-badge scanty-badge--active">active</span>';
+              const roleBadge = '<span class="scanty-badge scanty-badge--role">' + escapeHtml(s.role || 'staff') + '</span>';
+              const canEdit = role === 'super_admin' || (role === 'admin' && s.role === 'staff');
+              const toggleLabel = s.status === 'suspended' ? 'Reactivate' : 'Suspend';
+              const actions = canEdit
+                ? `<button class="scanty-btn scanty-btn--ghost" style="padding:4px 10px;font-size:12px" onclick="resetStaffPassword('${s.id}')">Reset password</button>
+                   <button class="scanty-btn ${s.status === 'suspended' ? 'scanty-btn--secondary' : 'scanty-btn--danger'}" style="padding:4px 10px;font-size:12px" onclick="toggleStaffStatus('${s.id}','${s.status === 'suspended' ? 'active' : 'suspended'}')">${toggleLabel}</button>`
+                : '';
+              return `<tr>
+                <td>${escapeHtml(s.username || '—')}</td>
+                <td>${escapeHtml(s.name || '')}</td>
+                <td>${roleBadge}</td>
+                <td>${statusBadge}</td>
+                <td>${actions}</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>`;
+      } catch (e) {
+        list.innerHTML = '<div style="color:#b3261e">Unable to load staff.</div>';
+        console.error(e);
+      }
+    }
+
+    async function createStaff(e) {
+      e.preventDefault();
+      const msg = document.getElementById('staffMsg');
+      msg.innerHTML = '';
+      const payload = {
+        username: document.getElementById('staffUsername').value.trim(),
+        name: document.getElementById('staffName').value.trim(),
+        role: document.getElementById('staffRole').value,
+      };
+      const pwd = document.getElementById('staffPassword').value;
+      if (pwd) payload.password = pwd;
+      try {
+        const res = await api('/api/staff', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          msg.innerHTML = '<div style="color:#b3261e">' + escapeHtml(data.message || 'Failed to create staff') + '</div>';
+          return;
+        }
+        if (data.password) {
+          msg.innerHTML = '<div style="color:#2C6A48">Account created. One-time password: <b>' + escapeHtml(data.password) + '</b> (copy it now).</div>';
+        } else {
+          msg.innerHTML = '<div style="color:#2C6A48">Account created.</div>';
+        }
+        document.getElementById('staffUsername').value = '';
+        document.getElementById('staffName').value = '';
+        document.getElementById('staffPassword').value = '';
+        loadStaff();
+      } catch (ex) {
+        msg.innerHTML = '<div style="color:#b3261e">Network error.</div>';
+      }
+    }
+
+    async function toggleStaffStatus(id, status) {
+      try {
+        const res = await api('/api/staff/' + encodeURIComponent(id) + '/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+        if (!res.ok) { alert('Failed to update status'); return; }
+        loadStaff();
+      } catch (e) { console.error(e); }
+    }
+
+    async function resetStaffPassword(id) {
+      if (!confirm('Reset this account password? A one-time password will be generated.')) return;
+      try {
+        const res = await api('/api/staff/' + encodeURIComponent(id) + '/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { alert(data.message || 'Failed to reset password'); return; }
+        if (data.password) alert('New one-time password: ' + data.password);
+        else alert('Password reset.');
+      } catch (e) { console.error(e); }
+    }
+
+    document.getElementById('staffCreateForm').addEventListener('submit', createStaff);
+
+    function applyRoleOptions() {
+      const sel = document.getElementById('staffRole');
+      if (!sel) return;
+      const allowed = currentRole() === 'super_admin' ? ['staff', 'admin', 'super_admin'] : ['staff'];
+      sel.innerHTML = allowed.map(r => '<option value="' + r + '">' + r.replace('_', ' ') + '</option>').join('');
+    }
+
+    async function loadSettings() {
+      if (currentRole() !== 'super_admin') return;
+      document.getElementById('settingsHeading').style.display = 'block';
+      document.getElementById('settingsSection').style.display = 'block';
+      try {
+        const res = await api('/api/settings/admin-sms');
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          document.getElementById('adminSmsPhone').value = data.value || '';
+        }
+      } catch (e) { console.error('loadSettings:', e); }
+    }
+
+    async function saveAdminSms() {
+      const msg = document.getElementById('settingsMsg');
+      msg.innerHTML = '';
+      const value = document.getElementById('adminSmsPhone').value.trim();
+      try {
+        const res = await api('/api/settings/admin-sms', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          msg.innerHTML = '<div style="color:#b3261e">' + escapeHtml(data.message || 'Failed to save') + '</div>';
+          return;
+        }
+        msg.innerHTML = '<div style="color:#2C6A48">Saved: ' + escapeHtml(data.value || '') + '</div>';
+      } catch (e) {
+        msg.innerHTML = '<div style="color:#b3261e">Network error.</div>';
+      }
+    }
+
+    // ===== Bulk & Event Orders =====
+    const BULK_STATUS_OPTS = ['REQUEST_RECEIVED','AWAITING_CUSTOMER_CONFIRMATION','APPROVED','AWAITING_DEPOSIT','CONFIRMED','PREPARING','PACKAGING','READY_FOR_PICKUP','OUT_FOR_DELIVERY','DELIVERED','COLLECTED','COMPLETED','CANCELLED'];
+    let bulkCache = [];
+
+    function moneyFmt(n) { return '₵' + (Number(n || 0).toFixed(2)); }
+
+    async function loadBulk() {
+      const status = document.getElementById('bulkStatusFilter').value;
+      const search = document.getElementById('bulkSearch').value.trim();
+      const qs = new URLSearchParams();
+      if (status) qs.set('status', status);
+      if (search) qs.set('search', search);
+      try {
+        const res = await api('/api/bulk-orders' + (qs.toString() ? '?' + qs.toString() : ''));
+        if (!res.ok) throw new Error('bulk fetch failed');
+        const data = await res.json();
+        bulkCache = data.bulk_orders || [];
+        renderBulkSummary(data.summary || {});
+        renderBulkList(bulkCache);
+      } catch (e) { console.error(e); document.getElementById('bulkList').innerHTML = '<div style="color:#b3261e">Unable to load bulk orders.</div>'; }
+    }
+
+    function renderBulkSummary(s) {
+      const cards = [['Total', s.total], ['Awaiting quote', s.awaiting_quotation], ['Awaiting confirm', s.awaiting_confirmation],
+        ['Confirmed', s.confirmed], ['Preparing', s.preparing], ['Packaging', s.packaging], ['Ready', s.ready],
+        ['Out for delivery', s.out_for_delivery], ['Completed', s.completed], ['Outstanding', moneyFmt(s.outstanding_balance)]];
+      document.getElementById('bulkSummary').innerHTML = cards.map(c => `<div class="stat">${c[0]}: <b>${c[1]}</b></div>`).join('');
+    }
+
+    function renderBulkList(list) {
+      const el = document.getElementById('bulkList');
+      if (!list.length) { el.innerHTML = '<div style="color:#6b6460">No bulk orders.</div>'; return; }
+      el.innerHTML = '<table class="scanty-table"><thead><tr><th>Ref</th><th>Customer</th><th>Event</th><th>Date</th><th>Packs</th><th>Quotation</th><th>Paid</th><th>Balance</th><th>Payment</th><th>Status</th><th></th></tr></thead><tbody>' +
+        list.map(b => `<tr>
+          <td>${escapeHtml(b.reference)}</td>
+          <td>${escapeHtml(b.customer_name || '')}</td>
+          <td>${escapeHtml(b.event_type || '')}</td>
+          <td>${escapeHtml(b.event_date || '')}</td>
+          <td>${b.total_packs ?? '—'}</td>
+          <td>${moneyFmt(b.quotation ? b.quotation.total : (b.requested_total || 0))}</td>
+          <td>${moneyFmt(b.amount_paid)}</td>
+          <td>${moneyFmt(b.outstanding_balance)}</td>
+          <td>${escapeHtml(b.payment_status || 'unpaid')}</td>
+          <td><span class="scanty-badge scanty-badge--role">${escapeHtml(b.status || '')}</span></td>
+          <td><button class="scanty-btn scanty-btn--ghost" style="padding:4px 10px;font-size:12px" onclick="openBulk('${escapeHtml(b.reference)}')">Open</button></td>
+        </tr>`).join('') + '</tbody></table>';
+    }
+
+    function bulkSearchKey(e) { if (e.key === 'Enter') loadBulk(); }
+
+    async function openBulk(ref) {
+      try {
+        const res = await api('/api/bulk-orders/' + encodeURIComponent(ref));
+        const data = await res.json();
+        if (!res.ok) throw new Error('not found');
+        document.getElementById('bulkModalTitle').textContent = 'Bulk Order ' + data.bulk_order.reference;
+        document.getElementById('bulkModalBody').innerHTML = renderBulkDetail(data.bulk_order);
+        document.getElementById('bulkModal').style.display = 'block';
+      } catch (e) { alert('Unable to load bulk order'); }
+    }
+
+    function renderBulkDetail(b) {
+      const meals = (b.meals || []).map(m => escapeHtml(m.name) + ' — requested ' + m.requested_qty).join(', ');
+      const q = b.quotation || null;
+      return `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="scanty-card" style="padding:12px"><b>Customer &amp; event</b>
+            <div style="font-size:13px;margin-top:6px">${escapeHtml(b.customer_name || '')} (${escapeHtml(b.contact_name || '—')})</div>
+            <div style="font-size:13px">${escapeHtml(b.phone || '')}</div>
+            <div style="font-size:13px">${escapeHtml(b.event_type || '')} · ${escapeHtml(b.event_date || '')} · ${escapeHtml(b.required_time || '')}</div>
+            <div style="font-size:13px">${b.fulfillment === 'pickup' ? 'Pickup' : 'Delivery'}: ${escapeHtml(b.delivery_address || '—')}</div>
+            <div style="font-size:13px;margin-top:4px">Meals: ${meals || '—'}</div>
+            <div style="font-size:13px">Instructions: ${escapeHtml(b.instructions || '—')}</div>
+          </div>
+          <div class="scanty-card" style="padding:12px"><b>Quotation &amp; payment</b>
+            ${q ? `<div style="font-size:13px;margin-top:6px">Total: <b>${moneyFmt(q.total)}</b></div>
+            <div style="font-size:13px">Deposit: ${moneyFmt(q.deposit_required || 0)}</div>
+            <div style="font-size:13px">Paid: ${moneyFmt(b.amount_paid)} · Balance: <b>${moneyFmt(b.outstanding_balance)}</b></div>
+            <div style="font-size:13px">Payment: ${escapeHtml(b.payment_status || 'unpaid')}</div>`
+            : '<div style="font-size:13px;margin-top:6px">No quotation yet.</div>'}
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <b>Actions</b>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+            <button class="scanty-btn scanty-btn--primary" style="padding:6px 12px;font-size:13px" onclick="openQuotationForm('${escapeHtml(b.reference)}')">Quotation</button>
+            <button class="scanty-btn scanty-btn--secondary" style="padding:6px 12px;font-size:13px" onclick="openPaymentForm('${escapeHtml(b.reference)}')">Record payment</button>
+            <select id="bulkStatusSelect" style="padding:6px 10px;border:1px solid #e7ddd0;border-radius:6px">
+              ${BULK_STATUS_OPTS.map(s => `<option ${s===b.status?'selected':''}>${s}</option>`).join('')}
+            </select>
+            <button class="scanty-btn scanty-btn--ghost" style="padding:6px 12px;font-size:13px" onclick="changeBulkStatus('${escapeHtml(b.reference)}')">Set status</button>
+            <button class="scanty-btn scanty-btn--danger" style="padding:6px 12px;font-size:13px" onclick="cancelBulkOrder('${escapeHtml(b.reference)}')">Cancel</button>
+          </div>
+          <div id="bulkActionMsg" style="margin-top:10px"></div>
+        </div>`;
+    }
+
+    function openQuotationForm(ref) {
+      const b = bulkCache.find(x => x.reference === ref);
+      if (!b) { alert('Reload and retry'); return; }
+      const meals = (b.meals || []).map(m => `
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <span style="flex:1;font-size:13px">${escapeHtml(m.name)}</span>
+          <input id="qty_${m.meal_id}" type="number" value="${m.requested_qty}" style="width:80px;padding:5px;border:1px solid #e7ddd0;border-radius:6px" placeholder="Qty">
+          <input id="price_${m.meal_id}" type="number" step="0.01" style="width:90px;padding:5px;border:1px solid #e7ddd0;border-radius:6px" placeholder="Price/pack">
+        </div>`).join('');
+      document.getElementById('bulkActionMsg').innerHTML = `<div class="scanty-card" style="padding:12px"><b>Prepare quotation</b><div style="margin-top:8px">${meals}
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <input id="bulkDelivery" type="number" step="0.01" placeholder="Delivery charge" style="flex:1;min-width:120px;padding:6px;border:1px solid #e7ddd0;border-radius:6px">
+          <input id="bulkDiscount" type="number" step="0.01" placeholder="Discount" style="flex:1;min-width:120px;padding:6px;border:1px solid #e7ddd0;border-radius:6px">
+          <input id="bulkDeposit" type="number" step="0.01" placeholder="Deposit required" style="flex:1;min-width:120px;padding:6px;border:1px solid #e7ddd0;border-radius:6px">
+        </div></div>
+        <button class="scanty-btn scanty-btn--primary" style="margin-top:10px" onclick="saveQuotation('${escapeHtml(ref)}')">Save quotation</button></div>`;
+    }
+
+    async function saveQuotation(ref) {
+      const b = bulkCache.find(x => x.reference === ref);
+      if (!b) return;
+      const items = (b.meals || []).map(m => ({
+        meal_id: m.meal_id, name: m.name,
+        quoted_qty: parseInt(document.getElementById('qty_' + m.meal_id).value || '0', 10),
+        price_per_pack: parseFloat(document.getElementById('price_' + m.meal_id).value || '0'),
+      })).filter(i => i.quoted_qty > 0);
+      const payload = { items,
+        delivery_charge: parseFloat(document.getElementById('bulkDelivery').value || '0'),
+        discount: parseFloat(document.getElementById('bulkDiscount').value || '0'),
+        deposit_required: parseFloat(document.getElementById('bulkDeposit').value || '0') };
+      const res = await api('/api/bulk-orders/' + encodeURIComponent(ref) + '/quotation', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { alert(data.message || 'Failed to save quotation'); return; }
+      alert('Quotation saved');
+      loadBulk(); openBulk(ref);
+    }
+
+    function openPaymentForm(ref) {
+      document.getElementById('bulkActionMsg').innerHTML = `<div class="scanty-card" style="padding:12px"><b>Record cash payment</b>
+        <input id="bulkPayAmount" type="number" step="0.01" placeholder="Amount received (GHS)" style="width:100%;margin-top:8px;padding:6px;border:1px solid #e7ddd0;border-radius:6px">
+        <input id="bulkPayNote" placeholder="Note / reference (optional)" style="width:100%;margin-top:8px;padding:6px;border:1px solid #e7ddd0;border-radius:6px">
+        <button class="scanty-btn scanty-btn--secondary" style="margin-top:10px" onclick="savePayment('${escapeHtml(ref)}')">Record payment</button></div>`;
+    }
+
+    async function savePayment(ref) {
+      const amount = parseFloat(document.getElementById('bulkPayAmount').value || '0');
+      const note = document.getElementById('bulkPayNote').value.trim();
+      const res = await api('/api/bulk-orders/' + encodeURIComponent(ref) + '/payments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, note }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { alert(data.message || 'Failed to record payment'); return; }
+      alert('Payment recorded');
+      loadBulk(); openBulk(ref);
+    }
+
+    async function changeBulkStatus(ref) {
+      const status = document.getElementById('bulkStatusSelect').value;
+      const res = await api('/api/bulk-orders/' + encodeURIComponent(ref) + '/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { alert(data.message || 'Failed to update status'); return; }
+      loadBulk(); openBulk(ref);
+    }
+
+    async function cancelBulkOrder(ref) {
+      const reason = prompt('Reason for cancellation:');
+      if (reason === null) return;
+      const res = await api('/api/bulk-orders/' + encodeURIComponent(ref) + '/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) });
+      if (!res.ok) { alert('Failed to cancel'); return; }
+      loadBulk(); openBulk(ref);
+    }
+
     // ===== Bootstrap =====
     (function init() {
       token = getToken();
@@ -374,6 +765,10 @@
       };
       showAdminContent();
       initDashboard();
+      loadStaff();
+      applyRoleOptions();
+      loadSettings();
+      loadBulk();
       fetchNotifications();
       initSocket();
     })();
@@ -448,6 +843,16 @@
     <div style="text-align:right; margin-top:20px;">
       <button onclick="document.getElementById('notifModal').style.display='none'" class="btn btn-primary" style="padding:8px 16px; cursor:pointer;">Close</button>
     </div>
+  </div>
+</div>
+
+<div id="bulkModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9000; overflow:auto;">
+  <div class="scanty-card" style="max-width:760px; margin:40px auto; padding:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 id="bulkModalTitle" style="margin:0;color:#641D28">Bulk Order</h3>
+      <button class="scanty-btn scanty-btn--ghost" onclick="document.getElementById('bulkModal').style.display='none'">Close</button>
+    </div>
+    <div id="bulkModalBody"></div>
   </div>
 </div>
 

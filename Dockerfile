@@ -8,9 +8,13 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 # Copy application files
 COPY app.py .
+COPY sms_provider.py .
 COPY index.html .
 COPY admin.html .
 COPY admin-login.html .
+COPY staff-login.html .
+COPY staff.html .
+COPY scanty-theme.css .
 COPY meals.json .
 COPY IMG ./IMG/
 

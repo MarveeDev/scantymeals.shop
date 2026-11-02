@@ -1,93 +1,29 @@
 [
   {
-    "name": "Plain Rice",
-    "price": 40,
-    "category": "Rice",
-    "image": "/IMG/plain%20rice.jpg",
-    "available": true
-  },
-  {
+    "id": "fried-rice",
     "name": "Fried Rice",
+    "description": "Golden wok-tossed rice with vegetables, egg and a savoury sauce.",
     "price": 40,
     "category": "Rice",
     "image": "/IMG/fried%20rice.jpg",
     "available": true
   },
   {
-    "name": "Noodles",
-    "price": 30,
-    "category": "Fast Food",
-    "image": "/IMG/EXT%20noddles.jpg",
-    "available": true
-  },
-  {
-    "name": "Noodles with Beef",
-    "price": 30,
-    "category": "Fast Food",
-    "image": "/IMG/noodles%20with%20beef.jpg",
-    "available": true
-  },
-  {
-    "name": "Beef Rice",
+    "id": "spaghetti",
+    "name": "Spaghetti",
+    "description": "Classic spaghetti tossed in a rich, flavourful sauce.",
     "price": 40,
-    "category": "Rice",
-    "image": "/IMG/beef%20rice.jpg",
-    "available": true
-  },
-  {
-    "name": "Noodles with Egg",
-    "price": 30,
-    "category": "Fast Food",
-    "image": "/IMG/noodle%20with%20egg.jpg",
-    "available": true
-  },
-  {
-    "name": "Roasted Chicken Leg",
-    "price": 35,
-    "category": "Protein",
-    "image": "/IMG/roasted%20chichen%20leg.jpg",
-    "available": true
-  },
-  {
-    "name": "Classic Fried Rice",
-    "price": 40,
-    "category": "Signature",
-    "image": "/IMG/menu_1.jpg",
-    "available": true
-  },
-  {
-    "name": "Assorted Spaghetti",
-    "price": 40,
-    "category": "Spicy",
+    "category": "Pasta",
     "image": "/IMG/menu_2.jpg",
     "available": true
   },
   {
-    "name": "Chicken Fried Rice",
-    "price": 40,
-    "category": "Protein",
-    "image": "/IMG/menu_3.jpg",
-    "available": true
-  },
-  {
-    "name": "Shrimp Fried Rice",
-    "price": 45,
-    "category": "Seafood",
-    "image": "/IMG/menu_4.jpg",
-    "available": true
-  },
-  {
-    "name": "Veggie Fried Rice",
-    "price": 35,
-    "category": "Vegetarian",
-    "image": "/IMG/menu_5.jpg",
-    "available": true
-  },
-  {
-    "name": "Special Mixed Rice",
-    "price": 50,
-    "category": "Signature",
-    "image": "/IMG/menu_6.jpg",
+    "id": "indomie",
+    "name": "Indomie",
+    "description": "Indomie noodles prepared Scanty-style.",
+    "price": 30,
+    "category": "Noodles",
+    "image": "/IMG/EXT%20noddles.jpg",
     "available": true
   }
 ]
