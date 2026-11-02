@@ -126,6 +126,7 @@ try:
     fcm_tokens_collection = db['fcm_tokens']
     audit_logs_collection = db['audit_logs']
     sms_logs_collection = db['sms_logs']
+    sms_outbox_collection = db['sms_outbox']
     settings_collection = db['settings']
     bulk_orders_collection = db['bulk_orders']
     otp_codes_collection = db['otp_codes']
@@ -144,6 +145,8 @@ try:
         fcm_tokens_collection.create_index('audience', unique=True)
         sms_logs_collection.create_index('dedupe_key', unique=True, sparse=True)
         settings_collection.create_index('key', unique=True)
+        sms_outbox_collection.create_index('status')
+        sms_outbox_collection.create_index('dedupe_key', unique=True, sparse=True)
         bulk_orders_collection.create_index('reference', unique=True)
         bulk_orders_collection.create_index('status')
         bulk_orders_collection.create_index('event_date')
@@ -167,6 +170,7 @@ except Exception as e:
     fcm_tokens_db = {} # audience -> token mapping
     audit_logs_db = []
     sms_logs_db = []
+    sms_outbox_db = []
     settings_db = {}
     bulk_orders_db = []
     bulk_counter = [1]
@@ -922,6 +926,196 @@ def verify_otp():
     user = _link_customer_by_phone(pd, phone)
     token = create_jwt_token(user['_id'], user.get('email', ''), user.get('role', 'customer'))
     return jsonify({"success": True, "token": token, "user": _safe_user(user)}), 200
+
+
+# ============================================================================
+# PHONE-NUMBER REGISTRATION / LOGIN / RECOVERY
+# ============================================================================
+
+MIN_PASSWORD_LENGTH = 6
+
+
+def _request_otp_internal(phone, purpose, extra=None):
+    """Generate + send an OTP for a purpose. Returns (ok, message)."""
+    pd = _phone_digits(phone)
+    ip = _client_ip()
+    if not _rate_limit_ok(f"otp:ip:{ip}", OTP_RATE_LIMIT_PER_IP):
+        return False, "Too many requests. Please try again later."
+    if not _rate_limit_ok(f"otp:phone:{pd}", OTP_RATE_LIMIT_PER_PHONE):
+        return False, "Too many requests. Please try again later."
+    latest = _latest_otp(pd)
+    if latest and latest.get("issued_ts"):
+        elapsed = datetime.utcnow().timestamp() - float(latest["issued_ts"])
+        if elapsed < OTP_RESEND_COOLDOWN_SECONDS:
+            wait = int(OTP_RESEND_COOLDOWN_SECONDS - elapsed)
+            return False, f"Please wait {wait} seconds before requesting another code."
+
+    otp = f"{secrets.randbelow(1000000):06d}"
+    salt = secrets.token_hex(8)
+    otp_hash = _hash_otp(otp, salt)
+    now = datetime.utcnow()
+    _invalidate_phone_otps(pd)
+    doc = {
+        "phone_digits": pd, "phone": phone, "otp_hash": otp_hash, "salt": salt, "purpose": purpose,
+        "expires_at": (now + timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat(),
+        "expires_ts": (now + timedelta(minutes=OTP_EXPIRY_MINUTES)).timestamp(),
+        "issued_at": now.isoformat(), "issued_ts": now.timestamp(),
+        "attempts": 0, "verified": False, "superseded": False,
+    }
+    if extra:
+        doc.update(extra)
+    if MONGODB_CONNECTED:
+        otp_codes_collection.insert_one(doc)
+    else:
+        otp_codes_db.append(doc)
+
+    message = f"Your ScantyMeals verification code is {otp}. It expires in 5 minutes."
+    sent_ok, send_reason = _send_otp_sms(phone, message)
+    if not sent_ok:
+        app.logger.warning("OTP send failed: %s", send_reason)
+    return True, "If this number is active, a verification code has been sent."
+
+
+def _verify_otp_code(phone, code):
+    """Validate + single-use-consume an OTP. Returns (ok, message_or_doc, otp_doc)."""
+    pd = _phone_digits(phone)
+    otp_doc = _active_otp(pd)
+    if not otp_doc:
+        return False, "No active code found. Please request a new one.", None
+    now = datetime.utcnow()
+    if otp_doc.get("expires_ts") and now.timestamp() > float(otp_doc["expires_ts"]):
+        return False, "This code has expired. Please request a new one.", None
+    if int(otp_doc.get("attempts") or 0) >= OTP_MAX_ATTEMPTS:
+        return False, "Too many incorrect attempts. Please request a new code.", None
+    expected = _hash_otp(code, otp_doc.get("salt", ""))
+    if not hmac.compare_digest(expected, otp_doc.get("otp_hash", "")):
+        _increment_otp_attempts(otp_doc)
+        remaining = OTP_MAX_ATTEMPTS - int(otp_doc.get("attempts") or 0)
+        return False, f"Incorrect code. {remaining} attempts remaining.", None
+    if not _mark_otp_verified(otp_doc):
+        return False, "This code has already been used.", None
+    return True, otp_doc, otp_doc
+
+
+def _register_customer_by_phone(pd, phone, password_hash):
+    now = datetime.now().isoformat()
+    user = _find_user_by_phone_digits(pd)
+    if user:
+        updates = {"phone_verified": True, "verified_at": now, "provider": "phone_password",
+                   "phone": phone, "password": password_hash}
+        if MONGODB_CONNECTED:
+            users_collection.update_one({"_id": user["_id"]}, {"$set": updates})
+        else:
+            user.update(updates)
+        return _find_user_by_phone_digits(pd) or user
+    new_user = {
+        "email": f"phone_{pd}@scanty.local",
+        "password": password_hash,
+        "name": f"Customer {pd[-4:]}",
+        "role": "customer", "phone": phone,
+        "provider": "phone_password",
+        "phone_verified": True, "verified_at": now, "created_at": now,
+    }
+    if MONGODB_CONNECTED:
+        r = users_collection.insert_one(new_user)
+        new_user["_id"] = r.inserted_id
+    else:
+        new_user["_id"] = f"usr_{len(users_db) + 1}"
+        users_db.append(new_user)
+    return new_user
+
+
+@app.route('/api/auth/register-phone', methods=['POST'])
+def register_phone():
+    """Register a customer by phone + password (OTP verifies ownership)."""
+    data = request.get_json(silent=True) or {}
+    phone = normalize_phone((data.get('phone') or '').strip())
+    password = (data.get('password') or '')
+    if not phone:
+        return jsonify({"success": False, "message": "Invalid phone number"}), 400
+    if len(password) < MIN_PASSWORD_LENGTH:
+        return jsonify({"success": False, "message": f"Password must be at least {MIN_PASSWORD_LENGTH} characters"}), 400
+    pd = _phone_digits(phone)
+    existing = _find_user_by_phone_digits(pd)
+    if existing and existing.get('phone_verified') and existing.get('password'):
+        return jsonify({"success": False, "message": "This number is already registered. Please sign in."}), 409
+
+    ok, msg = _request_otp_internal(phone, 'register', {'password_hash': hash_password(password)})
+    if not ok:
+        return jsonify({"success": False, "message": msg}), 429
+    return jsonify({"success": True, "message": msg}), 200
+
+
+@app.route('/api/auth/register-phone/verify', methods=['POST'])
+def register_phone_verify():
+    data = request.get_json(silent=True) or {}
+    phone = normalize_phone((data.get('phone') or '').strip())
+    code = (data.get('code') or '').strip()
+    if not phone or not code:
+        return jsonify({"success": False, "message": "Phone and code are required"}), 400
+    ok, res, otp_doc = _verify_otp_code(phone, code)
+    if not ok:
+        return jsonify({"success": False, "message": res}), 400
+    if otp_doc.get('purpose') != 'register':
+        return jsonify({"success": False, "message": "No registration in progress"}), 400
+    password_hash = otp_doc.get('password_hash')
+    if not password_hash:
+        return jsonify({"success": False, "message": "No password recorded"}), 400
+    user = _register_customer_by_phone(_phone_digits(phone), phone, password_hash)
+    token = create_jwt_token(user['_id'], user.get('email', ''), user.get('role', 'customer'))
+    return jsonify({"success": True, "token": token, "user": _safe_user(user)}), 200
+
+
+@app.route('/api/auth/login-phone', methods=['POST'])
+def login_phone():
+    data = request.get_json(silent=True) or {}
+    phone = normalize_phone((data.get('phone') or '').strip())
+    password = (data.get('password') or '')
+    if not phone or not password:
+        return jsonify({"success": False, "message": "Phone and password are required"}), 400
+    user = _find_user_by_phone_digits(_phone_digits(phone))
+    if not user or not user.get('password') or not verify_password(password, user['password']):
+        return jsonify({"success": False, "message": "Invalid credentials"}), 401
+    if not user.get('phone_verified'):
+        return jsonify({"success": False, "message": "Please verify your phone number first"}), 403
+    token = create_jwt_token(user['_id'], user.get('email', ''), user.get('role', 'customer'))
+    return jsonify({"success": True, "token": token, "user": _safe_user(user)}), 200
+
+
+@app.route('/api/auth/forgot-password', methods=['POST'])
+def forgot_password():
+    data = request.get_json(silent=True) or {}
+    phone = normalize_phone((data.get('phone') or '').strip())
+    if not phone:
+        return jsonify({"success": False, "message": "Invalid phone number"}), 400
+    ok, msg = _request_otp_internal(phone, 'reset')
+    if not ok:
+        return jsonify({"success": False, "message": msg}), 429
+    return jsonify({"success": True, "message": msg}), 200
+
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def reset_password():
+    data = request.get_json(silent=True) or {}
+    phone = normalize_phone((data.get('phone') or '').strip())
+    code = (data.get('code') or '').strip()
+    new_password = (data.get('new_password') or '')
+    if not phone or not code or len(new_password) < MIN_PASSWORD_LENGTH:
+        return jsonify({"success": False, "message": "Phone, code and a valid new password are required"}), 400
+    ok, res, otp_doc = _verify_otp_code(phone, code)
+    if not ok:
+        return jsonify({"success": False, "message": res}), 400
+    if otp_doc.get('purpose') != 'reset':
+        return jsonify({"success": False, "message": "No password reset in progress"}), 400
+    user = _find_user_by_phone_digits(_phone_digits(phone))
+    if not user:
+        return jsonify({"success": False, "message": "Account not found"}), 404
+    new_hash = hash_password(new_password)
+    if MONGODB_CONNECTED:
+        users_collection.update_one({"_id": user["_id"]}, {"$set": {"password": new_hash}})
+    else:
+        user["password"] = new_hash
+    return jsonify({"success": True, "message": "Password reset successfully"}), 200
 
 
 @app.route('/api/auth/profile', methods=['GET'])
@@ -1940,6 +2134,23 @@ def get_admin_sms_phone():
     return _get_setting(ADMIN_SMS_SETTING_KEY)
 
 
+def get_admin_sms_phones():
+    """Return the list of normalized administrator notification numbers."""
+    phones = []
+    for raw in (os.getenv('ADMIN_NOTIFICATION_PHONES') or '').split(','):
+        p = raw.strip()
+        if p:
+            norm = normalize_phone(p)
+            if norm and norm not in phones:
+                phones.append(norm)
+    single = get_admin_sms_phone()
+    if single:
+        norm = normalize_phone(single) or single
+        if norm not in phones:
+            phones.append(norm)
+    return phones
+
+
 # ============================================================================
 # CUSTOMER PHONE OTP (Gonline SMS transport)
 # ============================================================================
@@ -2085,6 +2296,64 @@ def _sms_already_sent(dedupe_key):
     return any(s.get("dedupe_key") == dedupe_key for s in sms_logs_db)
 
 
+def _outbox_has(dedupe_key):
+    if MONGODB_CONNECTED:
+        return sms_outbox_collection.find_one({"dedupe_key": dedupe_key}) is not None
+    return any(i.get("dedupe_key") == dedupe_key for i in sms_outbox_db)
+
+
+def enqueue_sms(recipient, message, order_id=None, event_type="alert"):
+    """Enqueue an SMS for asynchronous delivery (deduped). Never sends inline."""
+    recipient = _normalize_sms_recipient(recipient)
+    if not recipient:
+        return False
+    dedupe_key = f"{order_id or 'noid'}:{event_type}:{recipient}"
+    if _sms_already_sent(dedupe_key) or _outbox_has(dedupe_key):
+        return False
+    doc = {
+        "dedupe_key": dedupe_key,
+        "recipient": recipient,
+        "message": message,
+        "order_id": order_id,
+        "event_type": event_type,
+        "status": "pending",
+        "created_at": datetime.now().isoformat(),
+    }
+    if MONGODB_CONNECTED:
+        try:
+            sms_outbox_collection.insert_one(doc)
+        except Exception:
+            return False
+    else:
+        sms_outbox_db.append(doc)
+    return True
+
+
+def _process_sms_outbox(limit=50):
+    """Drain pending outbox items by sending them (dedupe + log via send_sms)."""
+    if MONGODB_CONNECTED:
+        items = list(sms_outbox_collection.find({"status": "pending"}).limit(limit))
+    else:
+        items = [i for i in sms_outbox_db if i.get("status") == "pending"][:limit]
+    now = datetime.utcnow().isoformat()
+    count = 0
+    for item in items:
+        if MONGODB_CONNECTED:
+            claimed = sms_outbox_collection.find_one_and_update(
+                {"_id": item["_id"], "status": "pending"},
+                {"$set": {"status": "processing"}})
+            if not claimed:
+                continue
+        send_sms(item.get("recipient"), item.get("message"), item.get("order_id"), item.get("event_type"))
+        if MONGODB_CONNECTED:
+            sms_outbox_collection.update_one({"_id": item["_id"]}, {"$set": {"status": "done", "processed_at": now}})
+        else:
+            item["status"] = "done"
+            item["processed_at"] = now
+        count += 1
+    return count
+
+
 SMS_MAX_RETRIES = 3
 _SMS_BACKOFF_SECONDS = [60, 300, 900]  # exponential-ish capped backoff
 
@@ -2227,23 +2496,29 @@ def _retry_due_sms(limit=20):
     return count
 
 
-def _start_sms_retry_sweeper():
-    """Best-effort background retry sweeper (opt-in, not production-reliable).
+def _start_sms_worker():
+    """Best-effort background SMS worker (opt-in via SMS_WORKER=1).
 
-    Enabled only when SMS_RETRY_SWEEPER=1. For guaranteed retries in production,
-    schedule a Render cron/job that calls POST /api/sms/retry.
+    Drains the SMS outbox and retries failed messages. The outbox and sms_logs
+    are MongoDB-backed, so a restart does not lose queued work. For guaranteed
+    processing in production, schedule a Render cron/job that calls
+    POST /api/sms/retry (or drains the outbox).
     """
-    if os.getenv('SMS_RETRY_SWEEPER') != '1':
+    if os.getenv('SMS_WORKER') != '1':
         return
 
     def _loop():
         try:
+            _process_sms_outbox(limit=50)
+        except Exception as e:
+            app.logger.warning(f"sms outbox worker error: {e}")
+        try:
             _retry_due_sms(limit=50)
         except Exception as e:
-            app.logger.warning(f"sms retry sweeper error: {e}")
-        threading.Timer(120, _loop).start()
+            app.logger.warning(f"sms retry worker error: {e}")
+        threading.Timer(15, _loop).start()
 
-    threading.Timer(10, _loop).start()
+    threading.Timer(5, _loop).start()
 
 
 def _order_items_summary(order):
@@ -2255,44 +2530,41 @@ def _payment_phrase(order):
 
 
 def _customer_order_sms_message(order):
-    name = order.get('customer_name') or 'Customer'
-    return (f"Hello {name}! Your ScantyMeals order {order['id']} has been received.\n\n"
-            f"Items: {_order_items_summary(order)}.\n"
-            f"Total: GHS {float(order.get('total') or 0):.2f}.\n"
-            f"Payment: {_payment_phrase(order)}.\n\n"
-            f"We'll keep you updated. Thank you for choosing ScantyMeals!")
+    return (f"Your ScantyMeals order {order['id']} has been successfully placed. "
+            f"Items: {_order_items_summary(order)}. "
+            f"Total: GHS {float(order.get('total') or 0):.2f}. "
+            f"Payment: {_payment_phrase(order)}. "
+            f"Thank you for choosing ScantyMeals!")
 
 
 def _admin_order_sms_message(order):
-    name = order.get('customer_name') or 'Customer'
-    return (f"SCANTYMEALS - NEW ORDER!\n\n"
-            f"{name} has placed order {order['id']}.\n\n"
-            f"Items: {_order_items_summary(order)}.\n"
-            f"Total: GHS {float(order.get('total') or 0):.2f}.\n"
-            f"Customer: {order.get('customer_phone') or 'N/A'}.\n"
-            f"Payment: {_payment_phrase(order)}.\n\n"
-            f"Please check your ScantyMeals dashboard.")
+    return (f"NEW SCANTYMEALS ORDER: {order['id']}. "
+            f"Customer: {order.get('customer_name') or 'Customer'}. "
+            f"Phone: {order.get('customer_phone') or 'N/A'}. "
+            f"Items: {_order_items_summary(order)}. "
+            f"Total: GHS {float(order.get('total') or 0):.2f}. "
+            f"Payment: {_payment_phrase(order)}.")
 
 
 def _notify_customer_order_sms(order):
     phone = order.get('customer_phone')
     if not phone:
         return False
-    return send_sms(phone, _customer_order_sms_message(order), order['id'], 'order_placed')[0]
+    return enqueue_sms(phone, _customer_order_sms_message(order), order['id'], 'order_placed')
 
 
 def _notify_admin_order_sms(order):
-    admin_phone = get_admin_sms_phone()
-    if not admin_phone:
-        return False
-    return send_sms(admin_phone, _admin_order_sms_message(order), order['id'], 'admin_new_order')[0]
+    sent = False
+    for admin_phone in get_admin_sms_phones():
+        sent = enqueue_sms(admin_phone, _admin_order_sms_message(order), order['id'], 'admin_new_order') or sent
+    return sent
 
 
 def _notify_customer_order(order):
     """Fire all notifications for a newly saved customer order.
 
-    Dashboard + customer SMS + admin SMS are independent; any failure is logged
-    and never cancels the order.
+    Dashboard notification is synchronous (fast, in-DB). SMS messages are
+    enqueued to the outbox so they never block order creation.
     """
     try:
         _create_notification(
@@ -2319,12 +2591,20 @@ def _notify_customer_order(order):
     try:
         _notify_customer_order_sms(order)
     except Exception as e:
-        app.logger.warning(f"Customer SMS failed: {e}")
+        app.logger.warning(f"Customer SMS enqueue failed: {e}")
 
     try:
         _notify_admin_order_sms(order)
     except Exception as e:
-        app.logger.warning(f"Admin SMS failed: {e}")
+        app.logger.warning(f"Admin SMS enqueue failed: {e}")
+
+    # If no async worker is running (dev/test), drain the outbox now so SMS
+    # still fires immediately. In production (SMS_WORKER=1) the worker handles it.
+    if os.getenv('SMS_WORKER') != '1':
+        try:
+            _process_sms_outbox(limit=20)
+        except Exception as e:
+            app.logger.warning(f"SMS outbox drain failed: {e}")
 
 
 def _notify_customer_status_sms(order, status):
@@ -3592,8 +3872,8 @@ def health():
 # ENTRYPOINT (dev only — use gunicorn in production, see Procfile)
 # ============================================================================
 
-# Opt-in best-effort SMS retry sweeper (disabled by default; see docs).
-_start_sms_retry_sweeper()
+# Opt-in best-effort SMS worker (drains outbox + retries; disabled by default).
+_start_sms_worker()
 
 if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0", debug=False, use_reloader=False, port=int(os.getenv('PORT', 5000)))

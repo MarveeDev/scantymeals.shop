@@ -327,22 +327,64 @@
       </div>
     </div>
 
-    <!-- ===== LOGIN PAGE (also reused at /admin-login) ===== -->
+    <!-- ===== AUTH PAGE (phone login / register / recovery) ===== -->
     <div id="loginPage" class="page">
       <div class="page-shell py-12 max-w-md mx-auto">
-        <h2 class="font-display text-3xl font-bold mb-6 text-center">Sign in</h2>
-        <form id="loginForm" class="bg-white rounded-lg p-6 shadow space-y-4">
-          <div>
-            <label class="block text-sm font-medium mb-1">Email</label>
-            <input type="email" name="email" required class="w-full border rounded-lg px-3 py-2">
+        <div class="bg-white rounded-xl p-6 shadow">
+          <h2 class="font-display text-2xl font-bold mb-4 text-center" style="color:#641D28">Account</h2>
+          <div id="authStatus" class="text-sm mb-3" style="min-height:20px"></div>
+
+          <!-- LOGIN -->
+          <div id="authLoginView" class="space-y-3">
+            <div><label class="block text-sm font-medium mb-1" style="color:#292522">Phone number</label>
+              <input id="loginPhoneInput" type="tel" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="0242292939"></div>
+            <div><label class="block text-sm font-medium mb-1" style="color:#292522">Password</label>
+              <input id="loginPasswordInput" type="password" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="••••••••"></div>
+            <button onclick="loginPhone()" id="loginPhoneBtn" class="btn-primary w-full py-3 rounded-lg">Sign in</button>
+            <div class="flex justify-between text-sm">
+              <button onclick="showAuthView('register')" style="color:#39845B;background:none;border:none;cursor:pointer">Create account</button>
+              <button onclick="showAuthView('forgot')" style="color:#6b6460;background:none;border:none;cursor:pointer">Forgot password?</button>
+            </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Password</label>
-            <input type="password" name="password" required class="w-full border rounded-lg px-3 py-2">
+
+          <!-- REGISTER -->
+          <div id="authRegisterView" class="space-y-3" style="display:none">
+            <div><label class="block text-sm font-medium mb-1" style="color:#292522">Phone number</label>
+              <input id="regPhoneInput" type="tel" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="0242292939"></div>
+            <div><label class="block text-sm font-medium mb-1" style="color:#292522">Create a password</label>
+              <input id="regPasswordInput" type="password" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="At least 6 characters"></div>
+            <button onclick="registerPhone()" id="registerBtn" class="btn-primary w-full py-3 rounded-lg">Send code</button>
+            <div class="text-center text-sm"><button onclick="showAuthView('login')" style="color:#6b6460;background:none;border:none;cursor:pointer">Back to sign in</button></div>
           </div>
-          <button type="submit" id="loginSubmitBtn" class="btn-primary w-full py-3 rounded-lg">Sign in</button>
-          <p id="loginError" class="text-sm text-red-600 hidden"></p>
-        </form>
+
+          <!-- FORGOT PASSWORD -->
+          <div id="authForgotView" class="space-y-3" style="display:none">
+            <div><label class="block text-sm font-medium mb-1" style="color:#292522">Phone number</label>
+              <input id="forgotPhoneInput" type="tel" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="0242292939"></div>
+            <button onclick="forgotPassword()" id="forgotBtn" class="btn-primary w-full py-3 rounded-lg">Send code</button>
+            <div class="text-center text-sm"><button onclick="showAuthView('login')" style="color:#6b6460;background:none;border:none;cursor:pointer">Back to sign in</button></div>
+          </div>
+
+          <!-- OTP VERIFY -->
+          <div id="authOtpView" class="space-y-3" style="display:none">
+            <p class="text-sm" style="color:#6b6460">Enter the 6-digit code sent to your phone.</p>
+            <div><label class="block text-sm font-medium mb-1" style="color:#292522">Code</label>
+              <input id="authOtpInput" type="text" inputmode="numeric" maxlength="6" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="••••••"></div>
+            <button onclick="authVerifyOtp()" id="authOtpBtn" class="btn-primary w-full py-3 rounded-lg">Verify</button>
+            <div class="text-center text-sm"><button onclick="showAuthView('login')" style="color:#6b6460;background:none;border:none;cursor:pointer">Cancel</button></div>
+          </div>
+
+          <!-- RESET PASSWORD -->
+          <div id="authResetView" class="space-y-3" style="display:none">
+            <p class="text-sm" style="color:#6b6460">Enter the code and a new password.</p>
+            <div><label class="block text-sm font-medium mb-1" style="color:#292522">Code</label>
+              <input id="resetOtpInput" type="text" inputmode="numeric" maxlength="6" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="••••••"></div>
+            <div><label class="block text-sm font-medium mb-1" style="color:#292522">New password</label>
+              <input id="resetPasswordInput" type="password" class="w-full border rounded-lg px-3 py-2.5" style="border-color:#e7ddd0" placeholder="At least 6 characters"></div>
+            <button onclick="resetPassword()" id="resetBtn" class="btn-primary w-full py-3 rounded-lg">Reset password</button>
+            <div class="text-center text-sm"><button onclick="showAuthView('login')" style="color:#6b6460;background:none;border:none;cursor:pointer">Back to sign in</button></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -847,7 +889,7 @@ function renderMenu() {
 
     return `
       <div class="menu-card">
-        <img class="menu-img" src="${escapeHtml(img)}" alt="${escapeHtml(meal.name || 'Meal')}">
+        <img class="menu-img" src="${escapeHtml(img)}" alt="${escapeHtml(meal.name || 'Meal')}" loading="lazy">
         <div class="menu-body">
           <div>
             <span class="menu-tag">${escapeHtml(meal.category || 'Meal')}</span>
@@ -1000,6 +1042,8 @@ window.addEventListener('DOMContentLoaded', () => {
     event.preventDefault();
 
     const statusEl = $('orderStatus');
+    const placeBtn = $('placeOrderBtn');
+    if (placeBtn) { placeBtn.disabled = true; placeBtn.style.opacity = '0.6'; }
     if (statusEl) {
       statusEl.classList.remove('hidden');
       statusEl.textContent = 'Placing order...';
@@ -1009,6 +1053,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const cartItems = cartItemsArray();
       if (!cartItems.length) {
         if (statusEl) { statusEl.textContent = 'Your cart is empty.'; statusEl.classList.remove('hidden'); }
+        if (placeBtn) { placeBtn.disabled = false; placeBtn.style.opacity = '1'; }
         return;
       }
 
@@ -1091,6 +1136,7 @@ window.addEventListener('DOMContentLoaded', () => {
           statusEl.textContent = msg;
           statusEl.classList.remove('hidden');
         }
+        if (placeBtn) { placeBtn.disabled = false; placeBtn.style.opacity = '1'; }
         return;
       }
 
@@ -1136,6 +1182,7 @@ window.addEventListener('DOMContentLoaded', () => {
     $('orderStatus').classList.remove('hidden');
     $('orderStatus').textContent = 'Order failed: ' + errMsg;
   }
+  if (placeBtn) { placeBtn.disabled = false; placeBtn.style.opacity = '1'; }
 }
       
     
@@ -1146,6 +1193,7 @@ function logout() {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   showToast('Signed out');
+  applyAuthUI();
 }
 function isVerified() {
   const u = getUser();
@@ -1427,7 +1475,130 @@ async function declineBulk(ref) {
     showToast('Quotation declined');
   } catch (e) { showToast('Failed'); }
 }
-function applyAuthUI() {}
+
+// ---- Phone auth (login / register / recovery) ----
+let authFlow = 'login'; // login | register | forgot | otp | reset
+let authPhone = '';
+
+function showAuthView(view) {
+  authFlow = view;
+  ['Login', 'Register', 'Forgot', 'Otp', 'Reset'].forEach(n => {
+    const el = $('auth' + n + 'View');
+    if (el) el.style.display = (n.toLowerCase() === view) ? 'block' : 'none';
+  });
+  authStatus('');
+}
+
+function authStatus(msg, isError) {
+  const el = $('authStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = isError ? '#b3261e' : '#2C6A48';
+}
+
+function setBtnBusy(btn, busy) {
+  if (!btn) return;
+  btn.disabled = busy;
+  btn.style.opacity = busy ? '0.6' : '1';
+}
+
+async function authPost(path, body) {
+  const res = await fetch(API_BASE + path, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  return res.json().catch(() => ({}));
+}
+
+function storeAuthSession(data) {
+  localStorage.setItem(TOKEN_KEY, data.token);
+  localStorage.setItem(USER_KEY, JSON.stringify(data.user || {}));
+  showToast('Signed in');
+  applyAuthUI();
+  goToPage('menu');
+  loadMyOrders?.();
+  loadMyBulkOrders?.();
+}
+
+async function loginPhone() {
+  const btn = $('loginPhoneBtn');
+  const phone = ($('loginPhoneInput').value || '').trim();
+  const password = $('loginPasswordInput').value;
+  if (!phone || !password) { authStatus('Enter your phone number and password.', true); return; }
+  setBtnBusy(btn, true);
+  try {
+    const data = await authPost('/api/auth/login-phone', { phone, password });
+    if (!data.token) { authStatus(data.message || 'Sign in failed.', true); setBtnBusy(btn, false); return; }
+    if (phone) localStorage.setItem('customerPhone', phone);
+    storeAuthSession(data);
+  } catch (e) { authStatus('Network error.', true); setBtnBusy(btn, false); }
+}
+
+async function registerPhone() {
+  const btn = $('registerBtn');
+  const phone = ($('regPhoneInput').value || '').trim();
+  const password = $('regPasswordInput').value;
+  if (!phone || password.length < 6) { authStatus('Enter a phone and a password (min 6 characters).', true); return; }
+  setBtnBusy(btn, true);
+  try {
+    const data = await authPost('/api/auth/register-phone', { phone, password });
+    if (!data.success) { authStatus(data.message || 'Registration failed.', true); setBtnBusy(btn, false); return; }
+    authPhone = phone;
+    showAuthView('otp');
+  } catch (e) { authStatus('Network error.', true); setBtnBusy(btn, false); }
+}
+
+async function forgotPassword() {
+  const btn = $('forgotBtn');
+  const phone = ($('forgotPhoneInput').value || '').trim();
+  if (!phone) { authStatus('Enter your phone number.', true); return; }
+  setBtnBusy(btn, true);
+  try {
+    const data = await authPost('/api/auth/forgot-password', { phone });
+    if (!data.success) { authStatus(data.message || 'Failed.', true); setBtnBusy(btn, false); return; }
+    authPhone = phone;
+    showAuthView('reset');
+  } catch (e) { authStatus('Network error.', true); setBtnBusy(btn, false); }
+}
+
+async function authVerifyOtp() {
+  const btn = $('authOtpBtn');
+  const code = ($('authOtpInput').value || '').trim();
+  if (!code) { authStatus('Enter the code.', true); return; }
+  setBtnBusy(btn, true);
+  try {
+    const data = await authPost('/api/auth/register-phone/verify', { phone: authPhone, code });
+    if (!data.token) { authStatus(data.message || 'Verification failed.', true); setBtnBusy(btn, false); return; }
+    localStorage.setItem('customerPhone', authPhone);
+    storeAuthSession(data);
+  } catch (e) { authStatus('Network error.', true); setBtnBusy(btn, false); }
+}
+
+async function resetPassword() {
+  const btn = $('resetBtn');
+  const code = ($('resetOtpInput').value || '').trim();
+  const newPassword = $('resetPasswordInput').value;
+  if (!code || newPassword.length < 6) { authStatus('Enter the code and a new password (min 6 characters).', true); return; }
+  setBtnBusy(btn, true);
+  try {
+    const data = await authPost('/api/auth/reset-password', { phone: authPhone, code, new_password: newPassword });
+    if (!data.success) { authStatus(data.message || 'Reset failed.', true); setBtnBusy(btn, false); return; }
+    authStatus('Password reset. Please sign in.', false);
+    showAuthView('login');
+  } catch (e) { authStatus('Network error.', true); setBtnBusy(btn, false); }
+}
+
+function applyAuthUI() {
+  const u = getUser();
+  const loggedIn = !!(getToken() && u);
+  const loginBtn = $('loginBtn');
+  const logoutBtn = $('logoutBtn');
+  const mobileLoginBtn = $('mobileLoginBtn');
+  const mobileLogoutBtn = $('mobileLogoutBtn');
+  if (loginBtn) loginBtn.style.display = loggedIn ? 'none' : 'block';
+  if (logoutBtn) logoutBtn.style.display = loggedIn ? 'block' : 'none';
+  if (mobileLoginBtn) mobileLoginBtn.style.display = loggedIn ? 'none' : 'block';
+  if (mobileLogoutBtn) mobileLogoutBtn.style.display = loggedIn ? 'block' : 'none';
+}
 </script>
 
 <script type="module">
