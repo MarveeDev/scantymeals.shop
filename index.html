@@ -919,7 +919,7 @@ function renderMenu() {
 
     const addButton = custom
       ? `<button class="btn-primary px-4 py-2 rounded-lg text-sm" type="button" ${unavailable ? 'disabled' : ''}
-           onclick="addToCartWithAmount(${JSON.stringify(mealId)})">${unavailable ? 'Unavailable' : 'Add to cart'}</button>`
+           onclick='addToCartWithAmount(${JSON.stringify(mealId)})'>${unavailable ? 'Unavailable' : 'Add to cart'}</button>`
       : `<button class="btn-primary px-4 py-2 rounded-lg text-sm" type="button" ${unavailable ? 'disabled' : ''}
            onclick='addToCart(${JSON.stringify(mealId)})'>${unavailable ? 'Unavailable' : 'Add to cart'}</button>`;
 

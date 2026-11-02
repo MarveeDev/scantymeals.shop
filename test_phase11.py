@@ -105,6 +105,19 @@ class Phase11AmountTests(unittest.TestCase):
         self.assertEqual(items['Spaghetti']['min_price'], 20.0)
         self.assertFalse(items['Indomie']['allow_custom_amount'])
 
+    # ---------- frontend regression (Add to Cart onclick) ----------
+    def test_frontend_add_to_cart_onclick_not_broken(self):
+        # Guard the exact production bug: the custom-amount button's inline
+        # onclick must use single-quote delimiters so the double quotes emitted
+        # by JSON.stringify(mealId) do not terminate the attribute early.
+        import pathlib
+        here = pathlib.Path(__file__).resolve().parent
+        html = (here / 'index.html').read_text(encoding='utf-8')
+        self.assertIn("onclick='addToCartWithAmount(", html)
+        self.assertNotIn('onclick="addToCartWithAmount(', html)
+        # fixed-meal button (Indomie) still wired correctly
+        self.assertIn("onclick='addToCart(", html)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
