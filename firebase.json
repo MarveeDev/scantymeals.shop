@@ -16,7 +16,14 @@
   "*.log",
   "*.err",
   "Dockerfile",
-  "dl.py"
+  "dl.py",
+  "sms_provider.py",
+  "test_api.py",
+  "test_phase*.py",
+  "fix_app.py",
+  "patch_app.py",
+  "VegiBulk V2/**",
+  "render.yaml"
     ],
     "cleanUrls": true,
     "trailingSlash": false,
