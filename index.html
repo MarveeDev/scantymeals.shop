@@ -746,21 +746,38 @@ function updateCartCount() {
   }
   return count;
 }
-function addToCart(mealId) {
+function addToCart(mealId, amount) {
   const id = String(mealId);
   const meal = MENU_ITEMS_CACHE.find(m => String(m.id) === id);
   if (!meal) { showToast('Item unavailable'); return; }
   if (meal.available === false) { showToast(meal.name + ' is currently unavailable'); return; }
+
+  let unitPrice = Number(meal.price) || 0;
+  if (meal.allow_custom_amount) {
+    const min = Number(meal.min_price ?? meal.price) || 0;
+    const amt = (amount === undefined || amount === '' || amount === null) ? min : Number(amount);
+    if (!Number.isFinite(amt) || amt < min) {
+      showToast('Amount for ' + meal.name + ' must be at least ₵' + min.toFixed(2));
+      return;
+    }
+    unitPrice = amt;
+  }
+
   const cart = getCart();
   const existing = cart[id];
   cart[id] = {
-    id: meal.id, name: meal.name, price: Number(meal.price) || 0,
+    id: meal.id, name: meal.name, price: unitPrice,
     image: meal.image, quantity: (existing ? existing.quantity : 0) + 1,
   };
   setCart(cart);
   updateCartCount();
   updateCartUI();
   showToast(meal.name + ' added');
+}
+function addToCartWithAmount(mealId) {
+  const el = document.getElementById('amount-' + String(mealId));
+  const amount = el ? el.value : undefined;
+  addToCart(mealId, amount);
 }
 function removeFromCart(mealId) {
   const cart = getCart();
@@ -859,6 +876,8 @@ async function fetchMenuFromMealsJson() {
     name: m?.name ?? `Item ${i + 1}`,
     description: m?.description ?? '',
     price: Number(m?.price ?? 0),
+    min_price: Number(m?.min_price ?? m?.price ?? 0),
+    allow_custom_amount: m?.allow_custom_amount === true,
     category: m?.category ?? 'Signature',
     image: m?.image ?? '/IMG/menu_1.jpg',
     available: m?.available ?? true,
@@ -886,6 +905,23 @@ function renderMenu() {
     const priceText = Number.isFinite(priceNum) ? priceNum.toFixed(2) : '0.00';
     const mealId = meal.id ?? '';
     const unavailable = meal.available === false;
+    const custom = meal.allow_custom_amount === true;
+    const minNum = Number(meal.min_price ?? meal.price ?? 0);
+    const minText = Number.isFinite(minNum) ? minNum.toFixed(2) : '0.00';
+
+    const priceHtml = custom
+      ? `<div class="flex items-center gap-2">
+          <span class="menu-price">From ₵${minText}</span>
+          <input id="amount-${escapeHtml(mealId)}" type="number" min="${minText}" step="0.01" value="${minText}"
+                 class="w-20 border rounded-lg px-2 py-1 text-sm" style="border-color:#e7ddd0" aria-label="Amount for ${escapeHtml(meal.name || 'Meal')}">
+        </div>`
+      : `<span class="menu-price">₵${priceText}</span>`;
+
+    const addButton = custom
+      ? `<button class="btn-primary px-4 py-2 rounded-lg text-sm" type="button" ${unavailable ? 'disabled' : ''}
+           onclick="addToCartWithAmount(${JSON.stringify(mealId)})">${unavailable ? 'Unavailable' : 'Add to cart'}</button>`
+      : `<button class="btn-primary px-4 py-2 rounded-lg text-sm" type="button" ${unavailable ? 'disabled' : ''}
+           onclick='addToCart(${JSON.stringify(mealId)})'>${unavailable ? 'Unavailable' : 'Add to cart'}</button>`;
 
     return `
       <div class="menu-card">
@@ -896,16 +932,9 @@ function renderMenu() {
             <h3 class="text-lg font-bold mb-1" style="color:#292522">${escapeHtml(meal.name || 'Meal')}</h3>
             <p class="mb-4" style="color:#6b6460;font-size:14px">${escapeHtml(meal.description || '')}</p>
           </div>
-          <div class="flex items-center justify-between mt-auto">
-            <span class="menu-price">₵${priceText}</span>
-            <button
-              class="btn-primary px-4 py-2 rounded-lg text-sm"
-              type="button"
-              ${unavailable ? 'disabled' : ''}
-              onclick='addToCart(${JSON.stringify(mealId)})'
-            >
-              ${unavailable ? 'Unavailable' : 'Add to cart'}
-            </button>
+          <div class="flex items-center justify-between mt-auto gap-2">
+            ${priceHtml}
+            ${addButton}
           </div>
         </div>
       </div>
@@ -1076,7 +1105,8 @@ window.addEventListener('DOMContentLoaded', () => {
         idempotency_key: checkoutIdempotencyKey,
         items: cartItems.map(i => ({
           id: i.id,
-          quantity: i.quantity
+          quantity: i.quantity,
+          amount: i.price
         })),
       };
 

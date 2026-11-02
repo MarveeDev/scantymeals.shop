@@ -4,6 +4,8 @@
     "name": "Fried Rice",
     "description": "Golden wok-tossed rice with vegetables, egg and a savoury sauce.",
     "price": 40,
+    "min_price": 30,
+    "allow_custom_amount": true,
     "category": "Rice",
     "image": "/IMG/fried%20rice.jpg",
     "available": true
@@ -13,6 +15,8 @@
     "name": "Spaghetti",
     "description": "Classic spaghetti tossed in a rich, flavourful sauce.",
     "price": 40,
+    "min_price": 20,
+    "allow_custom_amount": true,
     "category": "Pasta",
     "image": "/IMG/menu_2.jpg",
     "available": true
@@ -22,6 +26,8 @@
     "name": "Indomie",
     "description": "Indomie noodles prepared Scanty-style.",
     "price": 30,
+    "min_price": 30,
+    "allow_custom_amount": false,
     "category": "Noodles",
     "image": "/IMG/EXT%20noddles.jpg",
     "available": true

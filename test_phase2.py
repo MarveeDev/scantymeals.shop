@@ -103,21 +103,22 @@ class Phase2Tests(unittest.TestCase):
 
     # ---------- Server-side pricing ----------
     def test_correct_pricing(self):
+        # Fried Rice is now "pay-what-you-want from ₵30" (no amount → minimum).
         r = self.post_order([{'id': 'fried-rice', 'quantity': 2}, {'id': 'indomie', 'quantity': 1}])
         self.assertEqual(r.status_code, 201)
         order = r.get_json()['order']
-        self.assertEqual(order['total'], 110.0)  # 40*2 + 30
-        self.assertEqual(order['subtotal'], 110.0)
+        self.assertEqual(order['total'], 90.0)  # 30*2 + 30
+        self.assertEqual(order['subtotal'], 90.0)
 
     def test_forged_price_ignored(self):
         r = self.post_order([{'id': 'fried-rice', 'quantity': 1, 'price': 0.01, 'name': 'hacked'}])
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(r.get_json()['order']['total'], 40.0)
+        self.assertEqual(r.get_json()['order']['total'], 30.0)
 
-        # verify stored order unit_price reflects DB, not the forged value
+        # verify stored order unit_price reflects DB minimum, not the forged value
         orders = self.admin_get('/api/orders').get_json()['orders']
-        target = next(o for o in orders if o['customer_name'] == 'Test' and o['total'] == 40.0)
-        self.assertEqual(target['items'][0]['unit_price'], 40.0)
+        target = next(o for o in orders if o['customer_name'] == 'Test' and o['total'] == 30.0)
+        self.assertEqual(target['items'][0]['unit_price'], 30.0)
         self.assertTrue(target['price_verified'])
 
     def test_invalid_meal_id(self):
@@ -156,8 +157,8 @@ class Phase2Tests(unittest.TestCase):
 
         summary = self.admin_get('/api/analytics/summary').get_json()
         # pending is in pending_revenue but NOT in total_revenue (paid)
-        self.assertGreaterEqual(summary['pending_revenue'], 40.0)
-        self.assertGreaterEqual(summary['gross_revenue'], 40.0)
+        self.assertGreaterEqual(summary['pending_revenue'], 30.0)
+        self.assertGreaterEqual(summary['gross_revenue'], 30.0)
 
         # every pending order is also in gross, and paid is strictly <= gross
         self.assertLessEqual(summary['total_revenue'], summary['gross_revenue'])

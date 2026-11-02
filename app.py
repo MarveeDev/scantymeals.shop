@@ -3,6 +3,7 @@ import json
 import base64
 import hmac
 import hashlib
+import math
 import secrets
 import threading
 from datetime import datetime, date, timedelta
@@ -377,13 +378,16 @@ def add_header(response):
 DEFAULT_MEALS = [
     {"key": "fried-rice", "name": "Fried Rice",
      "description": "Golden wok-tossed rice with vegetables, egg and a savoury sauce.",
-     "price": 40.00, "category": "Rice", "image": "/IMG/fried rice.jpg", "available": True},
+     "price": 40.00, "min_price": 30.00, "allow_custom_amount": True,
+     "category": "Rice", "image": "/IMG/fried rice.jpg", "available": True},
     {"key": "spaghetti", "name": "Spaghetti",
      "description": "Classic spaghetti tossed in a rich, flavourful sauce.",
-     "price": 40.00, "category": "Pasta", "image": "/IMG/menu_2.jpg", "available": True},
+     "price": 40.00, "min_price": 20.00, "allow_custom_amount": True,
+     "category": "Pasta", "image": "/IMG/menu_2.jpg", "available": True},
     {"key": "indomie", "name": "Indomie",
      "description": "Indomie noodles prepared Scanty-style.",
-     "price": 30.00, "category": "Noodles", "image": "/IMG/EXT noddles.jpg", "available": True},
+     "price": 30.00, "min_price": 30.00, "allow_custom_amount": False,
+     "category": "Noodles", "image": "/IMG/EXT noddles.jpg", "available": True},
 ]
 
 
@@ -417,6 +421,23 @@ def seed_meals():
                 meals_db.append(entry)
 
 
+def ensure_meal_pricing():
+    """Idempotently apply customer-defined-amount pricing config to the
+    approved meals (adds min_price + allow_custom_amount without clobbering
+    other fields)."""
+    for meal in DEFAULT_MEALS:
+        fields = {
+            "min_price": float(meal.get("min_price") or meal.get("price") or 0),
+            "allow_custom_amount": bool(meal.get("allow_custom_amount", False)),
+        }
+        if MONGODB_CONNECTED:
+            meals_collection.update_one({"key": meal["key"]}, {"$set": fields})
+        else:
+            for m in meals_db:
+                if m.get("key") == meal["key"]:
+                    m.update(fields)
+
+
 def _meal_dict(meal):
     return {
         "id": str(meal.get("_id")),
@@ -424,6 +445,8 @@ def _meal_dict(meal):
         "name": meal.get("name", ""),
         "description": meal.get("description", ""),
         "price": float(meal.get("price") or 0),
+        "min_price": float(meal.get("min_price") or meal.get("price") or 0),
+        "allow_custom_amount": bool(meal.get("allow_custom_amount", False)),
         "category": meal.get("category", ""),
         "image": meal.get("image", ""),
         "available": bool(meal.get("available", True)),
@@ -458,6 +481,7 @@ def get_meal_by_id(meal_id):
 # Seed the approved menu (idempotent) so prices are always available.
 try:
     seed_meals()
+    ensure_meal_pricing()
 except Exception as e:
     print(f"Warning: seed_meals failed ({e})")
 
@@ -1377,7 +1401,7 @@ MAX_ITEM_QUANTITY = 100
 
 
 def _coerce_items(raw):
-    """Extract [{id, quantity}] pairs; validation happens in create_order."""
+    """Extract [{id, quantity, amount}] pairs; validation happens in the caller."""
     items = []
     if not isinstance(raw, list):
         return items
@@ -1387,16 +1411,38 @@ def _coerce_items(raw):
         meal_id = it.get('id') or it.get('meal_id')
         if meal_id is None or str(meal_id).strip() == '':
             continue
-        items.append({"id": str(meal_id).strip(), "quantity": it.get('quantity')})
+        items.append({
+            "id": str(meal_id).strip(),
+            "quantity": it.get('quantity'),
+            "amount": it.get('amount'),
+        })
     return items
 
 
-def _verify_order_items(items):
+def _validate_custom_amount(amount, min_price):
+    """Return a validated custom amount, or None if invalid/below minimum."""
+    if amount is None:
+        return min_price
+    if isinstance(amount, bool):
+        return None
+    try:
+        f = float(amount)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(f) or f < min_price:
+        return None
+    return round(f, 2)
+
+
+def _verify_order_items(items, custom_amounts=False):
     """Validate items against the meals collection.
 
     Returns (verified_items, error) where error is a (response, status) tuple
-    on failure or None on success. Client-supplied prices/names are ignored —
-    unit prices always come from MongoDB.
+    on failure or None on success. Unit prices always come from MongoDB.
+
+    custom_amounts=True (customer checkout) honors a client-supplied `amount`
+    for meals flagged allow_custom_amount (validated >= min_price). POS passes
+    custom_amounts=False so fixed meal prices are always used.
     """
     verified_items = []
     for item in items:
@@ -1421,7 +1467,15 @@ def _verify_order_items(items):
             return None, (jsonify({"success": False,
                                    "message": f"{meal.get('name', 'This item')} is currently unavailable"}), 400)
 
-        unit_price = round(float(meal.get('price') or 0), 2)
+        if custom_amounts and meal.get('allow_custom_amount'):
+            min_price = round(float(meal.get('min_price') or meal.get('price') or 0), 2)
+            unit_price = _validate_custom_amount(item.get('amount'), min_price)
+            if unit_price is None:
+                return None, (jsonify({"success": False,
+                                       "message": f"Amount for {meal.get('name', 'item')} must be at least GHS {min_price:.2f}"}), 400)
+        else:
+            unit_price = round(float(meal.get('price') or 0), 2)
+
         line_total = round(unit_price * quantity, 2)
         verified_items.append({
             "id": str(meal.get('_id')),
@@ -1489,7 +1543,7 @@ def create_order():
         if not items:
             return jsonify({"success": False, "message": "Cart is empty"}), 400
 
-        verified_items, err = _verify_order_items(items)
+        verified_items, err = _verify_order_items(items, custom_amounts=True)
         if err:
             return err
 
@@ -1963,7 +2017,7 @@ def create_pos_sale():
     if not items:
         return jsonify({"success": False, "message": "Cart is empty"}), 400
 
-    verified_items, err = _verify_order_items(items)
+    verified_items, err = _verify_order_items(items, custom_amounts=False)
     if err:
         return err
 
