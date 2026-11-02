@@ -18,6 +18,10 @@ COPY scanty-theme.css .
 COPY meals.json .
 COPY IMG ./IMG/
 
-# Run with Gunicorn on port 8080 (Cloud Run default)
+# Run with Gunicorn on port 8080 (Cloud Run default).
+# Single eventlet worker keeps Socket.IO sessions in one process (no
+# cross-worker "Invalid session" loss). The WSGI entrypoint is the Flask
+# `app` (SocketIO wraps it via middleware; the SocketIO object itself is
+# not a WSGI callable in Flask-SocketIO 5.x).
 ENV PORT=8080
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "app:app"]
+CMD ["gunicorn", "--worker-class", "eventlet", "--workers", "1", "--bind", "0.0.0.0:8080", "app:app"]
