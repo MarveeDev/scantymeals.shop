@@ -28,9 +28,14 @@
     "cleanUrls": true,
     "trailingSlash": false,
     "rewrites": [
-   { "source": "/", "destination": "/index.html" },
-   { "source": "/admin", "destination": "/admin.html" },
-   { "source": "**", "destination": "/index.html" }
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/admin-login", "destination": "/admin-login.html" },
+    { "source": "/staff", "destination": "/staff.html" },
+    { "source": "/staff-login", "destination": "/staff-login.html" },
+    { "source": "/notifications", "destination": "/notifications.html" },
+    { "source": "/admin-notifications", "destination": "/admin-notifications.html" },
+    { "source": "**", "destination": "/index.html" }
     ],
     "headers": [
       {

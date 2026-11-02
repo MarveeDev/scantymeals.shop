@@ -83,6 +83,8 @@
     <div id="ordersContainer">Loading...</div>
 
     <h2>Customers</h2>
+    <input id="customerSearch" placeholder="Search by name or phone…" onkeyup="filterCustomers()"
+           style="width:100%;max-width:360px;padding:8px 12px;border:1px solid #e7ddd0;border-radius:8px;margin-bottom:10px">
     <div id="customers">Loading...</div>
 
     <h2>Bulk &amp; Event Orders</h2>
@@ -309,21 +311,52 @@
 
       if (ord && Array.isArray(ord.orders)) {
         renderOrders([...ord.orders].reverse());
-
-        const map = new Map();
-        ord.orders.forEach(o => {
-          const k = o.customer_phone || o.customer_name;
-          if (!k) return;
-          map.set(k, { name: o.customer_name, phone: o.customer_phone });
-        });
-        const customers = [...map.values()];
-        document.getElementById('customers').innerHTML =
-          '<ul>' + customers.map(c =>
-            `<li>${escapeHtml(c.name)}${c.phone ? ' — ' + escapeHtml(c.phone) : ''}</li>`
-          ).join('') + '</ul>';
+        renderCustomers(ord.orders);
       } else {
         document.getElementById('ordersContainer').textContent = 'Unable to load orders';
       }
+    }
+
+    // ===== Customers =====
+    let customerRows = [];
+
+    function renderCustomers(orders) {
+      const map = new Map();
+      orders.forEach(o => {
+        const name = o.customer_name || 'Guest';
+        const phone = o.customer_phone || '';
+        const key = (phone || name).toLowerCase();
+        if (!map.has(key)) map.set(key, { name, phone, count: 0, total: 0, last: '' });
+        const c = map.get(key);
+        c.count += 1;
+        c.total += Number(o.total) || 0;
+        const ts = o.timestamp || o.date || '';
+        if (ts > c.last) c.last = ts;
+      });
+      customerRows = [...map.values()].sort((a, b) => b.total - a.total);
+      renderCustomerTable(customerRows);
+    }
+
+    function renderCustomerTable(rows) {
+      const el = document.getElementById('customers');
+      if (!rows.length) { el.innerHTML = '<div style="color:#6b6460">No customers yet.</div>'; return; }
+      el.innerHTML = `<table class="scanty-table">
+        <thead><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Total Spend</th><th>Most Recent</th></tr></thead>
+        <tbody>${rows.map(c => `<tr>
+          <td>${escapeHtml(c.name)}</td>
+          <td>${escapeHtml(c.phone || '—')}</td>
+          <td>${c.count}</td>
+          <td>₵${(c.total || 0).toFixed(2)}</td>
+          <td>${escapeHtml((c.last || '').slice(0, 10) || '—')}</td>
+        </tr>`).join('')}</tbody></table>`;
+    }
+
+    function filterCustomers() {
+      const q = (document.getElementById('customerSearch').value || '').trim().toLowerCase();
+      const rows = q
+        ? customerRows.filter(c => (c.name || '').toLowerCase().includes(q) || (c.phone || '').includes(q))
+        : customerRows;
+      renderCustomerTable(rows);
     }
 
     // Notifications Logic

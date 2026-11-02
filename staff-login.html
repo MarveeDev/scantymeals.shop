@@ -38,6 +38,21 @@
   </div>
 
   <script>
+    // Strip any credential-bearing query parameters from the URL immediately.
+    (function () {
+      try {
+        const SENSITIVE = ['email', 'password', 'pass', 'pwd', 'token', 'auth', 'key', 'secret', 'otp', 'code'];
+        const url = new URL(window.location.href);
+        let changed = false;
+        SENSITIVE.forEach(function (k) {
+          if (url.searchParams.has(k)) { url.searchParams.delete(k); changed = true; }
+        });
+        if (changed) {
+          history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+        }
+      } catch (e) { /* ignore */ }
+    })();
+
     const API_BASE = (location.hostname.endsWith('onrender.com') || location.hostname === 'localhost')
       ? '' // same-origin
       : 'https://scantymeals-shop-1.onrender.com';
